@@ -1,29 +1,23 @@
 'use client'
 
 import { ShoppingBagIcon } from 'lucide-react'
-import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
+import { Sheet, SheetTrigger } from '@/components/ui/sheet'
 import { selectItemCount, useCart, useHydrated } from '@/stores/cart'
 
-// Fase 3: botón con badge y panel lateral. El contenido completo del carrito
-// (subtotal, total y compra por WhatsApp) se agrega en la Fase 6.
+import { CartSheet } from './CartSheet'
+
+/** Botón del header con badge; abre el carrito lateral (también se abre al agregar productos). */
 export function CartButton() {
   const hydrated = useHydrated()
   const count = useCart(selectItemCount)
+  const isOpen = useCart((state) => state.isOpen)
+  const setOpen = useCart((state) => state.setOpen)
   const visibleCount = hydrated ? count : 0
 
   return (
-    <Sheet>
+    <Sheet open={isOpen} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button
           variant="ghost"
@@ -42,23 +36,7 @@ export function CartButton() {
           </span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-full sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle className="text-2xl">Tu carrito</SheetTitle>
-          <SheetDescription>
-            {visibleCount > 0 ? `${visibleCount} productos` : 'Todavía no agregaste productos.'}
-          </SheetDescription>
-        </SheetHeader>
-        {visibleCount === 0 && (
-          <div className="px-4">
-            <SheetClose asChild>
-              <Button asChild size="lg" className="w-full">
-                <Link href="/catalogo">Ver catálogo</Link>
-              </Button>
-            </SheetClose>
-          </div>
-        )}
-      </SheetContent>
+      <CartSheet />
     </Sheet>
   )
 }

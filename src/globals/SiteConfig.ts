@@ -39,7 +39,8 @@ export const SiteConfig: GlobalConfig = {
               defaultValue:
                 '¡Hola! Realicé mi pedido {orderCode} por un total de S/.{totalAmount}. Adjunto comprobante de pago.',
               admin: {
-                description: 'Variables disponibles: {orderCode}, {totalAmount}',
+                description:
+                  'Variables: {orderCode} (código), {totalAmount} (total), {customerName} (nombre del cliente) y {items} (lista de productos).',
               },
             },
             {

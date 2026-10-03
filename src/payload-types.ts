@@ -130,22 +130,38 @@ export interface UserAuthOperations {
   };
 }
 /**
+ * Al pasar un pedido a "Confirmado" se descuenta el stock de sus productos; si luego se cancela, se repone.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "orders".
  */
 export interface Order {
   id: number;
-  orderCode: string;
+  /**
+   * Se genera automáticamente al crear el pedido.
+   */
+  orderCode?: string | null;
+  /**
+   * Confirmado o Entregado: stock descontado. Pendiente o Cancelado: stock disponible.
+   */
   status: 'pending' | 'confirmed' | 'delivered' | 'cancelled';
-  customerName?: string | null;
-  customerPhone?: string | null;
+  /**
+   * Lo maneja el sistema según el estado del pedido.
+   */
+  stockApplied?: boolean | null;
+  customerName: string;
+  customerPhone: string;
   items: {
     product: number | Product;
+    productName?: string | null;
     quantity: number;
     unitPrice: number;
     id?: string | null;
   }[];
-  totalAmount: number;
+  /**
+   * Se calcula a partir de los productos.
+   */
+  totalAmount?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -392,12 +408,14 @@ export interface PayloadMigration {
 export interface OrdersSelect<T extends boolean = true> {
   orderCode?: T;
   status?: T;
+  stockApplied?: T;
   customerName?: T;
   customerPhone?: T;
   items?:
     | T
     | {
         product?: T;
+        productName?: T;
         quantity?: T;
         unitPrice?: T;
         id?: T;
@@ -585,7 +603,7 @@ export interface SiteConfig {
    */
   whatsappNumber?: string | null;
   /**
-   * Variables disponibles: {orderCode}, {totalAmount}
+   * Variables: {orderCode} (código), {totalAmount} (total), {customerName} (nombre del cliente) y {items} (lista de productos).
    */
   whatsappMessageTemplate?: string | null;
   customDesignWhatsappMessage?: string | null;

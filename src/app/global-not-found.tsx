@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 
 import { Header } from '@/components/shop/Header'
 import { NotFoundContent } from '@/components/shop/NotFoundContent'
-import { fontVariables } from '@/lib/fonts'
+import { fontVariablesNoPreload } from '@/lib/fonts-no-preload'
 
 export const metadata: Metadata = {
   title: 'Página no encontrada · Calypso Noir',
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 // (tienda y admin), Next no usa ninguno aquí: este archivo arma su propio <html>.
 export default function GlobalNotFound() {
   return (
-    <html lang="es" className={fontVariables}>
+    <html lang="es" className={fontVariablesNoPreload}>
       <body className="flex min-h-svh flex-col">
         <Header />
         <main id="contenido" className="flex-1">

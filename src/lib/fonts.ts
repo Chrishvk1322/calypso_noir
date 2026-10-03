@@ -15,3 +15,4 @@ export const bodyFont = Jost({
 
 /** Clases para <html> que exponen las variables de fuente usadas por el tema. */
 export const fontVariables = `${displayFont.variable} ${bodyFont.variable}`
+

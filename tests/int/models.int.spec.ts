@@ -117,6 +117,8 @@ describe('Modelos del CMS', () => {
   })
 
   describe('Orders', () => {
+    const customer = { customerName: 'Ana Pérez', customerPhone: '987654321' }
+
     it('crea un pedido válido con estado pending por defecto', async () => {
       const product = await payload.create({
         collection: 'products',
@@ -126,9 +128,9 @@ describe('Modelos del CMS', () => {
         collection: 'orders',
         // Sin status a propósito: se prueba el valor por defecto.
         data: {
+          ...customer,
           orderCode: '#PED-1234',
           items: [{ product: product.id, quantity: 2, unitPrice: 50 }],
-          totalAmount: 100,
         } as never,
       })
       expect(order.status).toBe('pending')
@@ -140,20 +142,34 @@ describe('Modelos del CMS', () => {
       await expect(
         payload.create({
           collection: 'orders',
-          data: { orderCode: '#PED-1234', status: 'pending', items, totalAmount: 10 },
+          data: { ...customer, orderCode: '#PED-1234', status: 'pending', items },
         }),
       ).rejects.toThrow()
       await expect(
-        payload.create({ collection: 'orders', data: { orderCode: 'PED1', status: 'pending', items, totalAmount: 10 } }),
+        payload.create({ collection: 'orders', data: { ...customer, orderCode: 'PED1', status: 'pending', items } }),
       ).rejects.toThrow()
     })
 
-    it('exige al menos un ítem y totalAmount', async () => {
+    it('exige al menos un ítem', async () => {
       await expect(
         payload.create({
           collection: 'orders',
-          data: { orderCode: '#PED-5555', status: 'pending', items: [], totalAmount: 10 },
+          data: { ...customer, status: 'pending', items: [] },
         }),
+      ).rejects.toThrow()
+    })
+
+    it('exige nombre y teléfono del cliente', async () => {
+      const product = await payload.find({ collection: 'products', limit: 1 })
+      const items = [{ product: product.docs[0].id, quantity: 1, unitPrice: 10 }]
+      await expect(
+        payload.create({ collection: 'orders', data: { customerPhone: '987654321', status: 'pending', items } as never }),
+      ).rejects.toThrow()
+      await expect(
+        payload.create({ collection: 'orders', data: { customerName: 'Ana', status: 'pending', items } as never }),
+      ).rejects.toThrow()
+      await expect(
+        payload.create({ collection: 'orders', data: { customerName: 'Ana', customerPhone: '123', status: 'pending', items } }),
       ).rejects.toThrow()
     })
   })

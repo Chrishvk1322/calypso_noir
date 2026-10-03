@@ -37,6 +37,7 @@ export function AddToCart({ product }: Props) {
     addItem(product, selected)
     setQuantity(1)
     setAdded(true)
+    useCart.getState().setOpen(true)
   }
 
   if (soldOut) {
