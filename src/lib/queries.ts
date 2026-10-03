@@ -134,3 +134,40 @@ export async function getCollectionBySlug(slug: string): Promise<Collection | nu
   })
   return docs[0] ?? null
 }
+
+export type ProductDetail = Product & { collection: Collection }
+
+/**
+ * Producto activo por slug, con imágenes y colección pobladas. Devuelve null si no existe,
+ * está inactivo o su colección está inactiva (el público no la recibe poblada).
+ */
+export async function getProductBySlug(slug: string): Promise<ProductDetail | null> {
+  const payload = await getPayloadClient()
+  const { docs } = await payload.find({
+    collection: 'products',
+    overrideAccess: false,
+    where: { slug: { equals: slug } },
+    limit: 1,
+    depth: 1,
+  })
+  const product = docs[0]
+  if (!product || typeof product.collection !== 'object' || !product.collection) return null
+  return product as ProductDetail
+}
+
+/** Otros productos de la misma colección (los más recientes), sin el actual. */
+export async function getRelatedProducts(product: ProductDetail, limit = 4): Promise<ProductCardData[]> {
+  const payload = await getPayloadClient()
+  const { docs } = await payload.find({
+    collection: 'products',
+    overrideAccess: false,
+    where: {
+      and: [{ collection: { equals: product.collection.id } }, { id: { not_equals: product.id } }],
+    },
+    sort: NEWEST_FIRST,
+    limit,
+    depth: 1,
+    select: productCardSelect,
+  })
+  return docs as ProductCardData[]
+}
