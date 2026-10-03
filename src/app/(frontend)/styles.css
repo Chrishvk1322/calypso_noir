@@ -1,34 +1,88 @@
-/* Estilos provisionales de la Fase 1; se reemplazan por Tailwind + shadcn/ui en la Fase 3. */
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+/* Identidad visual de Calypso Noir (ver CLAUDE.md › Identidad Visual y Paleta de Colores). */
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-display);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-charcoal: var(--charcoal);
+  --color-whatsapp: var(--whatsapp);
+  --color-whatsapp-hover: var(--whatsapp-hover);
+  --color-whatsapp-foreground: var(--whatsapp-foreground);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+}
+
 :root {
+  /* Fondo crema y negro del logo */
   --background: #feffee;
   --foreground: #111111;
+  --card: #feffee;
+  --card-foreground: #111111;
+  --popover: #feffee;
+  --popover-foreground: #111111;
+
+  /* Primario: negro sólido con texto claro; hover charcoal */
+  --primary: #000000;
+  --primary-foreground: #feffee;
+  --charcoal: #222222;
+
+  --secondary: #f1f2df;
+  --secondary-foreground: #111111;
+  --muted: #f1f2df;
+  --muted-foreground: #5c5c55;
+  --accent: #f1f2df;
+  --accent-foreground: #111111;
+  --destructive: #b42318;
+  --border: #e3e4cf;
+  --input: #d6d7c1;
+  --ring: #111111;
+
+  /* Botón sobresaliente WhatsApp / personalizados: esmeralda oscuro (contraste AA con texto claro) */
+  --whatsapp: #0f6e52;
+  --whatsapp-hover: #0b5a43;
+  --whatsapp-foreground: #feffee;
+
+  --radius: 0.5rem;
 }
 
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  margin: 0;
-  min-height: 100%;
-  background: var(--background);
-  color: var(--foreground);
-  font-family: system-ui, sans-serif;
-}
-
-.placeholder {
-  display: flex;
-  min-height: 100vh;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  text-align: center;
-}
-
-.placeholder h1 {
-  margin: 0;
-  letter-spacing: 0.04em;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans antialiased;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-heading;
+  }
 }
