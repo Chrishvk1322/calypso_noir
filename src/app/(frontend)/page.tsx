@@ -29,11 +29,11 @@ export default async function HomePage({ searchParams }: PageProps<'/'>) {
     <>
       {/* El h1 va antes del carrusel para que la jerarquía de títulos sea correcta. */}
       <h1 className="sr-only">Calypso Noir: piezas hechas a mano en arcilla polimérica</h1>
-      {page === 1 && <HeroCarousel slides={heroSlides} />}
+      <HeroCarousel slides={heroSlides} />
 
       <div id="colecciones" className="mx-auto flex max-w-6xl scroll-mt-20 flex-col gap-16 px-4 py-14 sm:px-6 sm:py-20">
         <header className="space-y-2 text-center">
-          <h2 className="text-4xl sm:text-5xl">{page === 1 ? 'Nuestras colecciones' : `Colecciones · página ${page}`}</h2>
+          <h2 className="text-4xl sm:text-5xl">Nuestras colecciones</h2>
           <p className="text-muted-foreground">Cada pieza está modelada a mano en arcilla polimérica.</p>
         </header>
 

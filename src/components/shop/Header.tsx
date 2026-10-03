@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { CartButton } from './CartButton'
 import { MobileNav } from './MobileNav'
 import { NavLinks } from './NavLinks'
+import { SearchDialog } from './SearchDialog'
 
 export function Header() {
   return (
@@ -32,7 +33,8 @@ export function Header() {
           <NavLinks className="flex items-center gap-8 text-sm tracking-wide uppercase" />
         </nav>
 
-        <div className="ml-auto md:ml-6">
+        <div className="ml-auto flex items-center md:ml-6">
+          <SearchDialog />
           <CartButton />
         </div>
       </div>

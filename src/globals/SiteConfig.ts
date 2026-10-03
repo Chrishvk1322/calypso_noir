@@ -54,6 +54,14 @@ export const SiteConfig: GlobalConfig = {
               defaultValue: '¡Hola! Tengo una consulta sobre Calypso Noir.',
             },
             {
+              name: 'receiptMessage',
+              type: 'textarea',
+              label: 'Mensaje en la boleta de compra',
+              defaultValue:
+                '¡Gracias por tu compra! Cada pieza fue modelada a mano con mucho cariño. Si tienes alguna consulta sobre tu pedido, escríbenos por WhatsApp.',
+              admin: { description: 'Aparece al pie de la boleta PDF que se emite para cada pedido finalizado.' },
+            },
+            {
               name: 'customDesignWhatsappMessage',
               type: 'textarea',
               label: 'Mensaje para diseños personalizados',

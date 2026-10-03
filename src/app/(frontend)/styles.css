@@ -100,3 +100,38 @@
     scrollbar-color: color-mix(in oklab, var(--foreground) 35%, transparent) var(--background);
   }
 }
+
+/* Transición entre páginas: el contenido sale con un fundido corto y el nuevo entra subiendo
+   levemente. El resto de la página (header, footer) no se anima. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-old(.page-swap) {
+  animation: page-out 160ms ease-in both;
+}
+
+::view-transition-new(.page-swap) {
+  animation: page-in 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(.page-swap),
+  ::view-transition-new(.page-swap) {
+    animation: none;
+  }
+}

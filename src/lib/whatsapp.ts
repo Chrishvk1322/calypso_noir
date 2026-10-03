@@ -25,12 +25,15 @@ export const buildWhatsAppUrl = (
   return message?.trim() ? `${base}?text=${encodeURIComponent(message.trim())}` : base
 }
 
-/** "51964588065" → "+51 964 588 065" (formato peruano); otros números: "+" y dígitos. */
+/** "51964588065" → "+51 964 588 065"; "987654321" → "987 654 321"; otros: "+" y dígitos. */
 export const formatPhone = (phone: string | null | undefined): string => {
   const digits = normalizePhone(phone)
   if (!digits) return ''
   const peru = digits.match(/^51(9\d{2})(\d{3})(\d{3})$/)
   if (peru) return `+51 ${peru[1]} ${peru[2]} ${peru[3]}`
+  // Celular peruano sin código de país (como suelen escribirlo los clientes).
+  const local = digits.match(/^(9\d{2})(\d{3})(\d{3})$/)
+  if (local) return `${local[1]} ${local[2]} ${local[3]}`
   return `+${digits}`
 }
 

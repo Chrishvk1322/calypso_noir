@@ -196,7 +196,7 @@ describe('Pedidos (Fase 6)', () => {
     })
   })
 
-  describe('Stock al cambiar el estado (admin)', () => {
+  describe('Flujo del admin: Confirmar / Anular confirmación / Cancelar pedido', () => {
     const createPending = async (quantity = 2): Promise<Order> => {
       const result = await checkout({ ...customer, items: [{ productId: luna.id, quantity }] })
       if (result.status !== 201) throw new Error(JSON.stringify(result.body))
@@ -207,49 +207,52 @@ describe('Pedidos (Fase 6)', () => {
     const setStatus = (id: number, status: Order['status']) =>
       payload.update({ collection: 'orders', id, data: { status } })
 
-    it('pending → confirmed descuenta el stock', async () => {
+    const adminUser = async () => {
+      const { docs } = await payload.find({ collection: 'users', where: { email: { equals: 'admin-test@calypso.test' } } })
+      return (
+        docs[0] ??
+        (await payload.create({ collection: 'users', data: { email: 'admin-test@calypso.test', password: 'Test-1234!' } }))
+      )
+    }
+
+    afterAll(async () => {
+      await payload.delete({ collection: 'users', where: { email: { equals: 'admin-test@calypso.test' } } })
+    })
+
+    it('"Confirmar" (pending → completed) descuenta el stock y registra la fecha de venta', async () => {
       const order = await createPending(2)
-      const confirmed = await setStatus(order.id, 'confirmed')
-      expect(confirmed.stockApplied).toBe(true)
+      expect(order.completedAt ?? null).toBeNull()
+      const completed = await setStatus(order.id, 'completed')
+      expect(completed.stockApplied).toBe(true)
+      expect(completed.completedAt).toBeTruthy()
       expect(await stockOf(luna.id)).toBe(3)
     })
 
-    it('re-guardar un pedido confirmado no descuenta dos veces', async () => {
+    it('re-guardar un pedido finalizado no descuenta dos veces ni cambia la fecha de venta', async () => {
       const order = await createPending(2)
-      await setStatus(order.id, 'confirmed')
-      await setStatus(order.id, 'confirmed')
-      await payload.update({ collection: 'orders', id: order.id, data: { customerName: 'Ana P.' } })
+      const completed = await setStatus(order.id, 'completed')
+      await setStatus(order.id, 'completed')
+      const edited = await payload.update({ collection: 'orders', id: order.id, data: { customerName: 'Ana P.' } })
       expect(await stockOf(luna.id)).toBe(3)
+      expect(edited.completedAt).toBe(completed.completedAt)
     })
 
-    it('confirmed → delivered no cambia el stock', async () => {
+    it('"Anular confirmación" (completed → pending) repone el stock y borra la fecha de venta', async () => {
       const order = await createPending(2)
-      await setStatus(order.id, 'confirmed')
-      await setStatus(order.id, 'delivered')
-      expect(await stockOf(luna.id)).toBe(3)
-    })
-
-    it('confirmed → cancelled repone el stock', async () => {
-      const order = await createPending(2)
-      await setStatus(order.id, 'confirmed')
-      const cancelled = await setStatus(order.id, 'cancelled')
-      expect(cancelled.stockApplied).toBe(false)
+      await setStatus(order.id, 'completed')
+      const annulled = await setStatus(order.id, 'pending')
+      expect(annulled.stockApplied).toBe(false)
+      expect(annulled.completedAt ?? null).toBeNull()
       expect(await stockOf(luna.id)).toBe(5)
     })
 
-    it('pending → cancelled no toca el stock', async () => {
+    it('editar la cantidad de un pedido finalizado aplica solo la diferencia', async () => {
       const order = await createPending(2)
-      await setStatus(order.id, 'cancelled')
-      expect(await stockOf(luna.id)).toBe(5)
-    })
-
-    it('editar la cantidad de un pedido confirmado aplica solo la diferencia', async () => {
-      const order = await createPending(2)
-      const confirmed = await setStatus(order.id, 'confirmed')
+      const completed = await setStatus(order.id, 'completed')
       await payload.update({
         collection: 'orders',
         id: order.id,
-        data: { items: confirmed.items.map((item) => ({ ...item, quantity: 4 })) },
+        data: { items: completed.items.map((item) => ({ ...item, quantity: 4 })) },
       })
       expect(await stockOf(luna.id)).toBe(1)
     })
@@ -257,7 +260,7 @@ describe('Pedidos (Fase 6)', () => {
     it('no deja confirmar si el stock ya no alcanza (y no cambia nada)', async () => {
       const order = await createPending(2)
       await setStock(luna.id, 1)
-      await expect(setStatus(order.id, 'confirmed')).rejects.toThrow(/Stock insuficiente/)
+      await expect(setStatus(order.id, 'completed')).rejects.toThrow(/Stock insuficiente/)
       expect(await stockOf(luna.id)).toBe(1)
       const unchanged = await payload.findByID({ collection: 'orders', id: order.id })
       expect(unchanged.status).toBe('pending')
@@ -275,14 +278,34 @@ describe('Pedidos (Fase 6)', () => {
       if (result.status !== 201) throw new Error(JSON.stringify(result.body))
       const { docs } = await payload.find({ collection: 'orders', where: { orderCode: { equals: result.body.orderCode } } })
       await setStock(sol.id, 1)
-      await expect(setStatus(docs[0].id, 'confirmed')).rejects.toThrow()
+      await expect(setStatus(docs[0].id, 'completed')).rejects.toThrow()
       expect(await stockOf(luna.id)).toBe(5)
       expect(await stockOf(sol.id)).toBe(1)
     })
 
-    it('borrar un pedido confirmado repone el stock', async () => {
+    it('"Cancelar pedido": un admin puede eliminar un pedido pendiente', async () => {
+      const order = await createPending(1)
+      const user = await adminUser()
+      await payload.delete({ collection: 'orders', id: order.id, overrideAccess: false, user })
+      expect(await payload.count({ collection: 'orders', where: { id: { equals: order.id } } })).toMatchObject({
+        totalDocs: 0,
+      })
+      expect(await stockOf(luna.id)).toBe(5)
+    })
+
+    it('un pedido finalizado no se puede eliminar desde el admin (primero se anula)', async () => {
       const order = await createPending(2)
-      await setStatus(order.id, 'confirmed')
+      await setStatus(order.id, 'completed')
+      const user = await adminUser()
+      await expect(
+        payload.delete({ collection: 'orders', id: order.id, overrideAccess: false, user }),
+      ).rejects.toThrow()
+      expect(await stockOf(luna.id)).toBe(3)
+    })
+
+    it('si un script borra un pedido finalizado, se repone el stock', async () => {
+      const order = await createPending(2)
+      await setStatus(order.id, 'completed')
       await payload.delete({ collection: 'orders', id: order.id })
       expect(await stockOf(luna.id)).toBe(5)
     })
@@ -293,7 +316,7 @@ describe('Pedidos (Fase 6)', () => {
         data: {
           customerName: 'Venta en feria',
           customerPhone: '999888777',
-          status: 'confirmed',
+          status: 'completed',
           items: [{ product: sol.id, quantity: 2, unitPrice: 20 }],
         },
       })

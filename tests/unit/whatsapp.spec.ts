@@ -61,6 +61,10 @@ describe('formatPhone', () => {
     expect(formatPhone('+51 964-588-065')).toBe('+51 964 588 065')
   })
 
+  it('formatea celulares peruanos sin código de país', () => {
+    expect(formatPhone('987654321')).toBe('987 654 321')
+  })
+
   it('deja otros números con "+" y dígitos', () => {
     expect(formatPhone('5491122334455')).toBe('+5491122334455')
     expect(formatPhone('')).toBe('')

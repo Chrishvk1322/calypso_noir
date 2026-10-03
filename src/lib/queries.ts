@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { slugify } from '@/hooks/slugify'
 import { CACHE_TAGS as T, cached } from '@/lib/cache'
 import { getPayloadClient } from '@/lib/payload'
 import type { Collection, HeroSlide, Product } from '@/payload-types'
@@ -243,3 +244,61 @@ async function fetchSitemapEntries(): Promise<{ collections: SitemapEntry[]; pro
 }
 
 export const getSitemapEntries = cached(fetchSitemapEntries, 'sitemap', [T.collections, T.products])
+
+// ---------------------------------------------------------------------------
+// Búsqueda
+// ---------------------------------------------------------------------------
+
+export type SearchResults = {
+  collections: Pick<Collection, 'id' | 'title' | 'slug' | 'description' | 'coverImage'>[]
+  products: ProductCardData[]
+}
+
+export const SEARCH_MIN_LENGTH = 2
+
+/**
+ * Busca colecciones (por título y descripción) y productos (por nombre). Además compara contra
+ * el slug, que no tiene acentos: así "coleccion" encuentra "Colección".
+ */
+async function fetchSearchResults(query: string, limit = 5): Promise<SearchResults> {
+  const term = query.trim().slice(0, 80)
+  if (term.length < SEARCH_MIN_LENGTH) return { collections: [], products: [] }
+  const slugTerm = slugify(term)
+
+  const payload = await getPayloadClient()
+  const [collections, products] = await Promise.all([
+    payload.find({
+      collection: 'collections',
+      overrideAccess: false,
+      where: {
+        or: [
+          { title: { like: term } },
+          { description: { like: term } },
+          ...(slugTerm ? [{ slug: { like: slugTerm } }] : []),
+        ],
+      },
+      sort: NEWEST_FIRST,
+      limit,
+      depth: 1,
+      select: { title: true, slug: true, description: true, coverImage: true },
+    }),
+    payload.find({
+      collection: 'products',
+      overrideAccess: false,
+      where: {
+        or: [{ name: { like: term } }, ...(slugTerm ? [{ slug: { like: slugTerm } }] : [])],
+      },
+      sort: NEWEST_FIRST,
+      limit,
+      depth: 1,
+      select: productCardSelect,
+    }),
+  ])
+
+  return {
+    collections: collections.docs,
+    products: products.docs as ProductCardData[],
+  }
+}
+
+export const searchCatalog = cached(fetchSearchResults, 'search', [T.collections, T.products, T.media])

@@ -1,15 +1,16 @@
 import type { Metadata } from 'next'
-import React from 'react'
+import React, { ViewTransition } from 'react'
 
 import { Footer } from '@/components/shop/Footer'
 import { Header } from '@/components/shop/Header'
+import { HideDevIndicator } from '@/components/shop/HideDevIndicator'
 import { fontVariables } from '@/lib/fonts'
 import { SITE_URL } from '@/lib/site-url'
 
 import './styles.css'
 
-// El contenido sale del CMS: se renderiza en cada request para reflejar cambios al instante.
-// (En la Fase 7 se cambia por páginas estáticas con revalidatePath desde hooks de Payload.)
+// Se renderiza en cada request (el build no necesita la base de datos); las consultas a Payload
+// están cacheadas con etiquetas que se invalidan al guardar en el admin (src/lib/cache.ts).
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
@@ -33,9 +34,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <Header />
         <main id="contenido" tabIndex={-1} className="flex-1 outline-none">
-          {children}
+          {/* Transición suave del contenido al navegar (ver ::view-transition-* en styles.css). */}
+          <ViewTransition default="page-swap">{children}</ViewTransition>
         </main>
         <Footer />
+        {process.env.NODE_ENV === 'development' && <HideDevIndicator />}
       </body>
     </html>
   )

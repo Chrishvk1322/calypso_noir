@@ -26,7 +26,7 @@ export function MobileNav() {
         <nav aria-label="Menú móvil" className="px-4">
           <NavLinks
             className="flex flex-col gap-1"
-            linkClassName="block py-3 text-lg"
+            linkClassName="py-2.5 text-lg after:bottom-1.5"
             onNavigate={() => setOpen(false)}
           />
         </nav>

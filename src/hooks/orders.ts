@@ -8,8 +8,8 @@ import {
 
 import type { Order } from '@/payload-types'
 
-/** Estados en los que el stock del pedido está descontado (la venta está confirmada). */
-export const STOCK_APPLIED_STATUSES: Order['status'][] = ['confirmed', 'delivered']
+/** Estados en los que el stock del pedido está descontado (la venta está finalizada). */
+export const STOCK_APPLIED_STATUSES: Order['status'][] = ['completed']
 
 type OrderItems = Order['items'] | null | undefined
 
@@ -99,10 +99,10 @@ export const snapshotItemsAndTotal: CollectionBeforeChangeHook<Order> = async ({
 /**
  * Ajusta el stock según la diferencia entre lo que estaba descontado antes y lo que debe
  * estarlo ahora:
- *  - pending → confirmed/delivered: descuenta.
- *  - confirmed/delivered → cancelled/pending: repone.
- *  - Re-guardar un pedido confirmado sin cambios: no hace nada (no descuenta dos veces).
- *  - Editar los ítems de un pedido confirmado: aplica solo la diferencia.
+ *  - pending → completed ("Confirmar"): descuenta.
+ *  - completed → pending ("Anular confirmación"): repone.
+ *  - Re-guardar un pedido finalizado sin cambios: no hace nada (no descuenta dos veces).
+ *  - Editar los ítems de un pedido finalizado: aplica solo la diferencia.
  * Todo corre en la transacción de la operación (`req`): si un producto no alcanza, no se
  * guarda nada.
  */
@@ -152,13 +152,22 @@ export const applyStock: CollectionBeforeChangeHook<Order> = async ({ data, orig
   }
 
   data.stockApplied = desired.size > 0
+  // Fecha de venta: se fija al finalizar y se borra si se anula la confirmación.
+  if (STOCK_APPLIED_STATUSES.includes(status)) {
+    data.completedAt = originalDoc?.stockApplied && originalDoc.completedAt ? originalDoc.completedAt : new Date().toISOString()
+  } else {
+    data.completedAt = null
+  }
   return data
 }
 
-/** Borrar un pedido confirmado (no entregado) equivale a cancelarlo: repone el stock. */
+/**
+ * Red de seguridad: desde el admin solo se pueden borrar pedidos pendientes (ver `access.delete`),
+ * pero si un script borra uno finalizado, se repone su stock.
+ */
 export const restoreStockOnDelete: CollectionBeforeDeleteHook = async ({ id, req }) => {
   const order = await req.payload.findByID({ collection: 'orders', id, depth: 0, req, disableErrors: true })
-  if (!order?.stockApplied || order.status !== 'confirmed') return
+  if (!order?.stockApplied) return
 
   for (const [productIdKey, quantity] of quantitiesByProduct(order.items)) {
     const product = await req.payload.findByID({

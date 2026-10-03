@@ -108,12 +108,14 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - `active`: Boolean (Default: true)
 
 ### 3. `Orders` (Colección de Payload)
-- `orderCode`: Text (Required, ej: `#PED-9204`)
-- `customerName`: Text (Optional)
-- `customerPhone`: Text (Optional)
+- `orderCode`: Text (Required, ej: `#PED-9204`, aleatorio y único)
+- `customerName`: Text (Required, lo pide el carrito)
+- `customerPhone`: Text (Required, lo pide el carrito)
 - `items`: Array (Producto, Cantidad, Precio Unitario)
 - `totalAmount`: Number (Required)
-- `status`: Select (`pending`, `confirmed`, `delivered`, `cancelled`)
+- `status`: Select (`pending` = Pendiente, `completed` = Finalizado)
+- `completedAt`: Date (fecha de venta, se registra al confirmar)
+- Acciones en el admin (con modal de confirmación): **Confirmar** (pendiente → finalizado, descuenta stock), **Cancelar pedido** (elimina un pedido pendiente), **Anular confirmación** (finalizado → pendiente, repone stock) y **Emitir boleta de compra** (PDF, solo finalizados).
 
 ### 4. `HeroSlides` (Colección de Payload)
 - `title`: Text

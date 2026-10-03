@@ -25,7 +25,10 @@ export default buildConfig({
     },
     meta: {
       titleSuffix: ' — Calypso Noir',
+      icons: [{ rel: 'icon', type: 'image/jpeg', url: '/assets/logo.jpg' }],
     },
+    // Fechas del admin como "03/10/2026 - 11:56 AM" (patrón de date-fns).
+    dateFormat: 'dd/MM/yyyy - hh:mm a',
   },
   i18n: {
     supportedLanguages: { es },

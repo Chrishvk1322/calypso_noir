@@ -130,7 +130,7 @@ export interface UserAuthOperations {
   };
 }
 /**
- * Al pasar un pedido a "Confirmado" se descuenta el stock de sus productos; si luego se cancela, se repone.
+ * "Confirmar" finaliza la venta y descuenta el stock. "Anular confirmación" lo devuelve a pendiente y repone el stock.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "orders".
@@ -142,9 +142,13 @@ export interface Order {
    */
   orderCode?: string | null;
   /**
-   * Confirmado o Entregado: stock descontado. Pendiente o Cancelado: stock disponible.
+   * Se cambia con los botones de arriba. Finalizado: venta cerrada y stock descontado.
    */
-  status: 'pending' | 'confirmed' | 'delivered' | 'cancelled';
+  status: 'pending' | 'completed';
+  /**
+   * Se registra al confirmar el pedido.
+   */
+  completedAt?: string | null;
   /**
    * Lo maneja el sistema según el estado del pedido.
    */
@@ -408,6 +412,7 @@ export interface PayloadMigration {
 export interface OrdersSelect<T extends boolean = true> {
   orderCode?: T;
   status?: T;
+  completedAt?: T;
   stockApplied?: T;
   customerName?: T;
   customerPhone?: T;
@@ -607,6 +612,10 @@ export interface SiteConfig {
    */
   whatsappMessageTemplate?: string | null;
   contactWhatsappMessage?: string | null;
+  /**
+   * Aparece al pie de la boleta PDF que se emite para cada pedido finalizado.
+   */
+  receiptMessage?: string | null;
   customDesignWhatsappMessage?: string | null;
   tiktokUrl?: string | null;
   instagramUrl?: string | null;
@@ -638,6 +647,7 @@ export interface SiteConfigSelect<T extends boolean = true> {
   whatsappNumber?: T;
   whatsappMessageTemplate?: T;
   contactWhatsappMessage?: T;
+  receiptMessage?: T;
   customDesignWhatsappMessage?: T;
   tiktokUrl?: T;
   instagramUrl?: T;

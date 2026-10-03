@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { authenticated } from '@/access'
+import { receiptEndpoint } from '@/endpoints/receipt'
 import { applyStock, assignOrderCode, restoreStockOnDelete, snapshotItemsAndTotal } from '@/hooks/orders'
 
 // Solo administradores. Los pedidos de la tienda se crean desde POST /api/orders
@@ -12,7 +13,9 @@ export const Orders: CollectionConfig = {
     read: authenticated,
     create: authenticated,
     update: authenticated,
-    delete: authenticated,
+    // Solo se eliminan pedidos pendientes ("Cancelar pedido"). Uno finalizado primero debe
+    // volver a pendiente con "Anular confirmación", que repone el stock.
+    delete: ({ req: { user } }) => (user ? { status: { equals: 'pending' } } : false),
   },
   admin: {
     useAsTitle: 'orderCode',
@@ -20,8 +23,15 @@ export const Orders: CollectionConfig = {
     listSearchableFields: ['orderCode', 'customerName', 'customerPhone'],
     group: 'Tienda',
     description:
-      'Al pasar un pedido a "Confirmado" se descuenta el stock de sus productos; si luego se cancela, se repone.',
+      '"Confirmar" finaliza la venta y descuenta el stock. "Anular confirmación" lo devuelve a pendiente y repone el stock.',
+    components: {
+      edit: {
+        // Botones Confirmar / Cancelar pedido / Anular confirmación / Emitir boleta.
+        beforeDocumentControls: ['/components/admin/OrderActions#OrderActions'],
+      },
+    },
   },
+  endpoints: [receiptEndpoint],
   defaultSort: '-createdAt',
   hooks: {
     beforeValidate: [assignOrderCode],
@@ -52,13 +62,23 @@ export const Orders: CollectionConfig = {
       index: true,
       options: [
         { label: 'Pendiente', value: 'pending' },
-        { label: 'Confirmado', value: 'confirmed' },
-        { label: 'Entregado', value: 'delivered' },
-        { label: 'Cancelado', value: 'cancelled' },
+        { label: 'Finalizado', value: 'completed' },
       ],
       admin: {
         position: 'sidebar',
-        description: 'Confirmado o Entregado: stock descontado. Pendiente o Cancelado: stock disponible.',
+        readOnly: true,
+        description: 'Se cambia con los botones de arriba. Finalizado: venta cerrada y stock descontado.',
+      },
+    },
+    {
+      name: 'completedAt',
+      type: 'date',
+      label: 'Fecha de venta',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        date: { pickerAppearance: 'dayAndTime', displayFormat: 'dd/MM/yyyy - hh:mm a' },
+        description: 'Se registra al confirmar el pedido.',
       },
     },
     {

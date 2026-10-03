@@ -26,9 +26,14 @@ export function NavLinks({ className, linkClassName, onNavigate }: Props) {
             href={href}
             onClick={onNavigate}
             aria-current={isActive(href) ? 'page' : undefined}
+            // Subrayado propio (pseudo-elemento) que crece desde el centro, en vez del
+            // `text-decoration` que aparece de golpe.
             className={cn(
-              'rounded-sm underline-offset-8 transition-colors hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-              isActive(href) ? 'text-foreground underline' : 'text-muted-foreground',
+              'relative inline-block rounded-sm transition-colors duration-300 ease-out hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+              'after:absolute after:inset-x-0 after:-bottom-1.5 after:h-px after:origin-center after:bg-current after:transition-transform after:duration-300 after:ease-out motion-reduce:after:transition-none',
+              isActive(href)
+                ? 'text-foreground after:scale-x-100'
+                : 'text-muted-foreground after:scale-x-0 hover:after:scale-x-100',
               linkClassName,
             )}
           >
