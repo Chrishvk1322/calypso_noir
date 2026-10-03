@@ -2,11 +2,17 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { buildConfig } from 'payload'
+import { es } from 'payload/i18n/es'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
-import { Users } from './collections/Users'
+import { Collections } from './collections/Collections'
+import { HeroSlides } from './collections/HeroSlides'
 import { Media } from './collections/Media'
+import { Orders } from './collections/Orders'
+import { Products } from './collections/Products'
+import { Users } from './collections/Users'
+import { SiteConfig } from './globals/SiteConfig'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -17,8 +23,16 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    meta: {
+      titleSuffix: ' — Calypso Noir',
+    },
   },
-  collections: [Users, Media],
+  i18n: {
+    supportedLanguages: { es },
+    fallbackLanguage: 'es',
+  },
+  collections: [Orders, Products, Collections, HeroSlides, Media, Users],
+  globals: [SiteConfig],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
