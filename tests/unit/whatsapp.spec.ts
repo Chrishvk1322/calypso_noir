@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildWhatsAppUrl, fillTemplate, normalizePhone } from '@/lib/whatsapp'
+import { buildWhatsAppUrl, fillTemplate, formatPhone, normalizePhone, socialHandle } from '@/lib/whatsapp'
 
 describe('normalizePhone', () => {
   it('deja solo dígitos', () => {
@@ -52,5 +52,30 @@ describe('fillTemplate', () => {
 
   it('reemplaza todas las apariciones y deja visibles las desconocidas', () => {
     expect(fillTemplate('{a} {a} {b}', { a: 1 })).toBe('1 1 {b}')
+  })
+})
+
+describe('formatPhone', () => {
+  it('formatea números peruanos', () => {
+    expect(formatPhone('51964588065')).toBe('+51 964 588 065')
+    expect(formatPhone('+51 964-588-065')).toBe('+51 964 588 065')
+  })
+
+  it('deja otros números con "+" y dígitos', () => {
+    expect(formatPhone('5491122334455')).toBe('+5491122334455')
+    expect(formatPhone('')).toBe('')
+  })
+})
+
+describe('socialHandle', () => {
+  it('extrae el usuario de la URL', () => {
+    expect(socialHandle('https://www.instagram.com/calypsonoir/')).toBe('@calypsonoir')
+    expect(socialHandle('https://www.tiktok.com/@calypsonoir')).toBe('@calypsonoir')
+  })
+
+  it('devuelve null si no hay usuario o la URL no es válida', () => {
+    expect(socialHandle('https://www.instagram.com/')).toBeNull()
+    expect(socialHandle('no es url')).toBeNull()
+    expect(socialHandle(null)).toBeNull()
   })
 })

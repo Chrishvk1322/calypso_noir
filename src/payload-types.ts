@@ -606,6 +606,7 @@ export interface SiteConfig {
    * Variables: {orderCode} (código), {totalAmount} (total), {customerName} (nombre del cliente) y {items} (lista de productos).
    */
   whatsappMessageTemplate?: string | null;
+  contactWhatsappMessage?: string | null;
   customDesignWhatsappMessage?: string | null;
   tiktokUrl?: string | null;
   instagramUrl?: string | null;
@@ -636,6 +637,7 @@ export interface SiteConfigSelect<T extends boolean = true> {
   contactEmail?: T;
   whatsappNumber?: T;
   whatsappMessageTemplate?: T;
+  contactWhatsappMessage?: T;
   customDesignWhatsappMessage?: T;
   tiktokUrl?: T;
   instagramUrl?: T;

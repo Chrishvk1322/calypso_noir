@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { anyone, authenticated } from '@/access'
+import { revalidateAfterChange, revalidateAfterDelete } from '@/hooks/revalidate'
 
 // Todas las imágenes se optimizan localmente con sharp (configurado en payload.config.ts).
 export const Media: CollectionConfig = {
@@ -14,6 +15,11 @@ export const Media: CollectionConfig = {
   },
   admin: {
     group: 'Contenido',
+  },
+  hooks: {
+    // Una imagen reemplazada o editada (alt, punto focal) afecta todo lo que la muestra.
+    afterChange: [revalidateAfterChange(['media', 'collections', 'products', 'hero-slides', 'site-config'])],
+    afterDelete: [revalidateAfterDelete(['media', 'collections', 'products', 'hero-slides', 'site-config'])],
   },
   fields: [
     {

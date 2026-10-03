@@ -23,7 +23,7 @@ const pageItems = (page: number, totalPages: number): (number | 'gap')[] => {
 }
 
 const itemClass =
-  'inline-flex h-10 min-w-10 items-center justify-center gap-1 rounded-md px-3 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+  'inline-flex h-11 min-w-11 items-center justify-center gap-1 rounded-md px-3 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
 
 export function Pagination({ page, totalPages, basePath, anchor }: Props) {
   if (totalPages <= 1) return null

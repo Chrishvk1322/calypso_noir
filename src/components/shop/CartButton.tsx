@@ -22,7 +22,7 @@ export function CartButton() {
         <Button
           variant="ghost"
           size="icon-lg"
-          className="relative"
+          className="relative size-11"
           aria-label={visibleCount > 0 ? `Carrito, ${visibleCount} productos` : 'Carrito vacío'}
         >
           <ShoppingBagIcon className="size-5" />

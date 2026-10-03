@@ -102,7 +102,7 @@ describe('Detalle de producto (Fase 5)', () => {
 
   it('lista productos relacionados de la misma colección sin el actual ni inactivos', async () => {
     const product = (await getProductBySlug('aretes-luna'))!
-    const related = await getRelatedProducts(product)
+    const related = await getRelatedProducts(product.collection.id, product.id)
     expect(related.map((p) => p.name).sort()).toEqual(['Anillo Mar', 'Collar Sol'])
   })
 

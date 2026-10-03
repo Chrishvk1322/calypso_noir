@@ -84,5 +84,19 @@
   h2,
   h3 {
     @apply font-heading;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  /* Superficies del navegador con la paleta de la tienda. */
+  ::selection {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+  html {
+    caret-color: var(--foreground);
+    accent-color: var(--primary);
+    scrollbar-color: color-mix(in oklab, var(--foreground) 35%, transparent) var(--background);
   }
 }

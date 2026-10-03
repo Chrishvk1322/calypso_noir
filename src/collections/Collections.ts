@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { authenticated, authenticatedOrActive } from '@/access'
 import { slugField } from '@/fields/slug'
+import { revalidateAfterChange, revalidateAfterDelete } from '@/hooks/revalidate'
 
 export const Collections: CollectionConfig = {
   slug: 'collections',
@@ -18,6 +19,10 @@ export const Collections: CollectionConfig = {
     group: 'Tienda',
   },
   defaultSort: '-createdAt',
+  hooks: {
+    afterChange: [revalidateAfterChange(['collections'])],
+    afterDelete: [revalidateAfterDelete(['collections'])],
+  },
   fields: [
     { name: 'title', type: 'text', label: 'Título', required: true },
     slugField('title'),

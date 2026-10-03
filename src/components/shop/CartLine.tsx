@@ -54,7 +54,7 @@ export function CartLine({ item, onNavigate }: { item: CartItem; onNavigate: () 
             variant="ghost"
             size="sm"
             onClick={() => removeItem(item.productId)}
-            className="gap-1.5 text-muted-foreground hover:text-destructive"
+            className="h-11 gap-1.5 text-muted-foreground hover:text-destructive"
             aria-label={`Quitar ${item.name} del carrito`}
           >
             <Trash2Icon className="size-4" />

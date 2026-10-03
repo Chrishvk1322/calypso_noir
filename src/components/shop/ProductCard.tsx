@@ -37,7 +37,7 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
         )}
       </div>
       <div className="flex flex-col gap-1">
-        <h3 className="font-sans text-sm leading-snug font-normal sm:text-base">{product.name}</h3>
+        <p className="text-sm leading-snug sm:text-base">{product.name}</p>
         <p className="text-sm font-medium tabular-nums">{formatPrice(product.price)}</p>
       </div>
     </Link>

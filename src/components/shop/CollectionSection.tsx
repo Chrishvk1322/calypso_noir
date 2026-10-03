@@ -12,14 +12,14 @@ export function CollectionSection({ collection, priority = false }: { collection
     <section aria-labelledby={headingId} data-testid="collection-section" className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div className="max-w-2xl space-y-1">
-          <h2 id={headingId} className="text-3xl sm:text-4xl">
+          <h3 id={headingId} className="text-3xl sm:text-4xl">
             {collection.title}
-          </h2>
+          </h3>
           {collection.description && <p className="text-muted-foreground">{collection.description}</p>}
         </div>
         <Link
           href={`/colecciones/${collection.slug}`}
-          className="inline-flex items-center gap-1.5 rounded-sm text-sm tracking-wide uppercase underline-offset-8 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          className="-my-3 inline-flex min-h-11 items-center gap-1.5 rounded-sm text-sm tracking-wide uppercase underline-offset-8 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
           Ver colección
           {collection.productCount > 0 && (

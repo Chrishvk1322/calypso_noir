@@ -112,7 +112,7 @@ export function HeroCarousel({ slides }: { slides: HeroSlideData[] }) {
         <>
           <CarouselPrevious className="left-4 hidden size-10 border-none bg-background/80 text-foreground hover:bg-background sm:inline-flex" />
           <CarouselNext className="right-4 hidden size-10 border-none bg-background/80 text-foreground hover:bg-background sm:inline-flex" />
-          <div className="absolute inset-x-0 bottom-5 flex justify-center gap-2">
+          <div className="absolute inset-x-0 bottom-2 flex justify-center">
             {slides.map((slide, index) => (
               <button
                 key={slide.id}
@@ -120,11 +120,15 @@ export function HeroCarousel({ slides }: { slides: HeroSlideData[] }) {
                 onClick={() => api?.scrollTo(index)}
                 aria-label={`Ir al slide ${index + 1}`}
                 aria-current={index === current ? 'true' : undefined}
-                className={cn(
-                  'h-2 rounded-full bg-primary-foreground/60 transition-all focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:outline-none',
-                  index === current ? 'w-8 bg-primary-foreground' : 'w-2',
-                )}
-              />
+                className="group/dot flex h-11 min-w-11 items-center justify-center rounded-full px-1.5 focus-visible:outline-none"
+              >
+                <span
+                  className={cn(
+                    'h-2 rounded-full bg-primary-foreground/60 transition-all group-focus-visible/dot:ring-2 group-focus-visible/dot:ring-primary-foreground group-focus-visible/dot:ring-offset-2 group-focus-visible/dot:ring-offset-black/40',
+                    index === current ? 'w-8 bg-primary-foreground' : 'w-2',
+                  )}
+                />
+              </button>
             ))}
           </div>
         </>

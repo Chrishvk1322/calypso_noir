@@ -42,10 +42,7 @@ export default async function AboutPage() {
         )}
 
         <div className="flex flex-col gap-6">
-          <header className="space-y-2">
-            <p className="text-xs tracking-[0.3em] text-muted-foreground uppercase">Calypso Noir</p>
-            <h1 className="text-5xl sm:text-6xl">Sobre mí</h1>
-          </header>
+          <h1 className="text-5xl sm:text-6xl">Sobre mí</h1>
 
           {hasText ? (
             <RichTextContent data={config.aboutUsText} className="text-lg" />

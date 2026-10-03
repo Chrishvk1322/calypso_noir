@@ -59,7 +59,7 @@ export default async function ProductPage({ params }: PageProps<'/productos/[slu
   const product = await loadProduct(slug)
   if (!product) notFound()
 
-  const related = await getRelatedProducts(product)
+  const related = await getRelatedProducts(product.collection.id, product.id)
 
   const images = (product.images ?? []).flatMap((media) => {
     const full = getImage(media)
@@ -94,12 +94,6 @@ export default async function ProductPage({ params }: PageProps<'/productos/[slu
 
         <div className="flex flex-col gap-6 md:sticky md:top-24 md:self-start">
           <div className="space-y-3">
-            <Link
-              href={`/colecciones/${collection.slug}`}
-              className="text-xs tracking-[0.25em] text-muted-foreground uppercase underline-offset-4 hover:underline"
-            >
-              {collection.title}
-            </Link>
             <h1 className="text-4xl leading-tight sm:text-5xl">{product.name}</h1>
             <p className="text-2xl font-medium tabular-nums" data-testid="product-price">
               {formatPrice(product.price)}

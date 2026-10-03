@@ -20,10 +20,11 @@ export default async function CatalogPage({ searchParams }: PageProps<'/catalogo
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 py-14 sm:px-6 sm:py-20">
       <header className="space-y-2 text-center">
-        <p className="text-xs tracking-[0.3em] text-muted-foreground uppercase">
-          {pagination.totalDocs} colecciones
-        </p>
         <h1 className="text-5xl sm:text-6xl">Catálogo</h1>
+        <p className="text-muted-foreground">
+          {pagination.totalDocs === 1 ? '1 colección' : `${pagination.totalDocs} colecciones`} hechas a mano en
+          arcilla polimérica.
+        </p>
       </header>
 
       {collections.length > 0 ? (

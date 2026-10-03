@@ -1,6 +1,7 @@
 import type { GlobalConfig } from 'payload'
 
 import { anyone, authenticated } from '@/access'
+import { revalidateGlobalAfterChange } from '@/hooks/revalidate'
 
 export const SiteConfig: GlobalConfig = {
   slug: 'site-config',
@@ -11,6 +12,9 @@ export const SiteConfig: GlobalConfig = {
   },
   admin: {
     group: 'Contenido',
+  },
+  hooks: {
+    afterChange: [revalidateGlobalAfterChange(['site-config'])],
   },
   fields: [
     {
@@ -42,6 +46,12 @@ export const SiteConfig: GlobalConfig = {
                 description:
                   'Variables: {orderCode} (código), {totalAmount} (total), {customerName} (nombre del cliente) y {items} (lista de productos).',
               },
+            },
+            {
+              name: 'contactWhatsappMessage',
+              type: 'textarea',
+              label: 'Mensaje para consultas (página de Contacto)',
+              defaultValue: '¡Hola! Tengo una consulta sobre Calypso Noir.',
             },
             {
               name: 'customDesignWhatsappMessage',

@@ -20,7 +20,7 @@ export default function GlobalNotFound() {
     <html lang="es" className={fontVariablesNoPreload}>
       <body className="flex min-h-svh flex-col">
         <Header />
-        <main id="contenido" className="flex-1">
+        <main id="contenido" tabIndex={-1} className="flex-1 outline-none">
           <NotFoundContent />
         </main>
         <footer className="border-t bg-secondary/60">

@@ -4,6 +4,7 @@ import React from 'react'
 import { Footer } from '@/components/shop/Footer'
 import { Header } from '@/components/shop/Header'
 import { fontVariables } from '@/lib/fonts'
+import { SITE_URL } from '@/lib/site-url'
 
 import './styles.css'
 
@@ -12,7 +13,7 @@ import './styles.css'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: 'Calypso Noir',
     template: '%s · Calypso Noir',
@@ -31,7 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Saltar al contenido
         </a>
         <Header />
-        <main id="contenido" className="flex-1">
+        <main id="contenido" tabIndex={-1} className="flex-1 outline-none">
           {children}
         </main>
         <Footer />

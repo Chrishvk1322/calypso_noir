@@ -1,6 +1,7 @@
 import { APIError, type CollectionBeforeValidateHook, type CollectionConfig } from 'payload'
 
 import { anyone, authenticated } from '@/access'
+import { revalidateAfterChange, revalidateAfterDelete } from '@/hooks/revalidate'
 
 export const MAX_HERO_SLIDES = 3
 
@@ -35,6 +36,8 @@ export const HeroSlides: CollectionConfig = {
   defaultSort: 'order',
   hooks: {
     beforeValidate: [limitSlides],
+    afterChange: [revalidateAfterChange(['hero-slides'])],
+    afterDelete: [revalidateAfterDelete(['hero-slides'])],
   },
   fields: [
     { name: 'title', type: 'text', label: 'Título' },
