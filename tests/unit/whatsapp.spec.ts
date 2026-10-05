@@ -75,6 +75,11 @@ describe('socialHandle', () => {
   it('extrae el usuario de la URL', () => {
     expect(socialHandle('https://www.instagram.com/calypsonoir/')).toBe('@calypsonoir')
     expect(socialHandle('https://www.tiktok.com/@calypsonoir')).toBe('@calypsonoir')
+    expect(socialHandle('https://pe.pinterest.com/calypsonoir/')).toBe('@calypsonoir')
+  })
+
+  it('no inventa un usuario con enlaces cortos de Pinterest', () => {
+    expect(socialHandle('https://pin.it/3xAbC12')).toBeNull()
   })
 
   it('devuelve null si no hay usuario o la URL no es válida', () => {

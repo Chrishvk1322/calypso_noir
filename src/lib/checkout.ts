@@ -10,6 +10,7 @@ import {
   type StockProblem,
 } from '@/lib/checkout-schema'
 import { formatPrice } from '@/lib/format'
+import { getPricing } from '@/lib/pricing'
 import { buildWhatsAppUrl, fillTemplate } from '@/lib/whatsapp'
 
 export const DEFAULT_ORDER_TEMPLATE =
@@ -68,7 +69,7 @@ export async function createOrderFromCart(payload: Payload, input: unknown): Pro
     where: { id: { in: [...requested.keys()] } },
     limit: requested.size,
     depth: 1,
-    select: { name: true, price: true, stock: true, collection: true },
+    select: { name: true, price: true, onSale: true, salePrice: true, stock: true, collection: true },
     pagination: false,
   })
   const products = new Map(
@@ -100,7 +101,8 @@ export async function createOrderFromCart(payload: Payload, input: unknown): Pro
 
   const items = [...requested].map(([productId, quantity]) => {
     const product = products.get(productId)!
-    return { product: productId, productName: product.name, quantity, unitPrice: product.price }
+    // Se cobra el precio de oferta si aplica; el pedido guarda ese precio como histórico.
+    return { product: productId, productName: product.name, quantity, unitPrice: getPricing(product).price }
   })
 
   // El código lo genera el hook de Orders; si dos pedidos simultáneos chocan en el índice

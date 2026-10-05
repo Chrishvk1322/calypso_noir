@@ -7,15 +7,25 @@ import { useState } from 'react'
 import type { ImageData } from '@/lib/media'
 import { cn } from '@/lib/utils'
 
+import { ImageBadge } from './Price'
+
 type GalleryImage = { full: ImageData; thumb: ImageData | null }
 
-export function ProductGallery({ images, name }: { images: GalleryImage[]; name: string }) {
+type Props = {
+  images: GalleryImage[]
+  name: string
+  /** Etiqueta sobre la imagen principal, igual que en las tarjetas. */
+  badge?: 'soldOut' | 'sale' | null
+}
+
+export function ProductGallery({ images, name, badge = null }: Props) {
   const [current, setCurrent] = useState(0)
 
   if (images.length === 0) {
     return (
-      <div className="flex aspect-[4/5] items-center justify-center rounded-md bg-secondary font-heading text-xl text-muted-foreground">
+      <div className="relative flex aspect-[4/5] items-center justify-center rounded-md bg-secondary font-heading text-xl text-muted-foreground">
         Sin imagen
+        {badge && <ImageBadge variant={badge} />}
       </div>
     )
   }
@@ -52,6 +62,7 @@ export function ProductGallery({ images, name }: { images: GalleryImage[]; name:
           className="object-cover"
           data-testid="gallery-main"
         />
+        {badge && <ImageBadge variant={badge} />}
 
         {images.length > 1 && (
           <>

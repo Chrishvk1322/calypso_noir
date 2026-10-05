@@ -4,16 +4,14 @@ import { Button } from '@/components/ui/button'
 import { getSiteConfig } from '@/lib/site'
 import { buildWhatsAppUrl } from '@/lib/whatsapp'
 
-import { InstagramIcon, TikTokIcon, WhatsAppIcon } from './icons'
+import { WhatsAppIcon } from './icons'
+import { socialLinks } from './socials'
 
 export async function Footer() {
   const config = await getSiteConfig()
   const customDesignUrl = buildWhatsAppUrl(config.whatsappNumber, config.customDesignWhatsappMessage)
 
-  const socials = [
-    { href: config.instagramUrl, label: 'Instagram', Icon: InstagramIcon },
-    { href: config.tiktokUrl, label: 'TikTok', Icon: TikTokIcon },
-  ].filter((s): s is typeof s & { href: string } => Boolean(s.href))
+  const socials = socialLinks(config)
 
   return (
     <footer className="mt-auto border-t bg-secondary/60">

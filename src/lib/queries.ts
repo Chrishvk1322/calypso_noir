@@ -2,8 +2,11 @@ import 'server-only'
 
 import { slugify } from '@/hooks/slugify'
 import { CACHE_TAGS as T, cached } from '@/lib/cache'
+import { DEFAULT_FILTERS, type ProductFilters, toPayloadSort } from '@/lib/filters'
 import { getPayloadClient } from '@/lib/payload'
-import type { Collection, HeroSlide, Product } from '@/payload-types'
+import { SEARCH_MIN_LENGTH } from '@/lib/search'
+import type { AccessoryType, Collection, HeroSlide, Product } from '@/payload-types'
+import type { Where } from 'payload'
 
 // Todas las consultas públicas usan `overrideAccess: false` para que el control de acceso
 // (solo documentos activos) se aplique igual que para un visitante anónimo.
@@ -23,6 +26,8 @@ const productCardSelect = {
   name: true,
   slug: true,
   price: true,
+  onSale: true,
+  salePrice: true,
   stock: true,
   images: true,
   createdAt: true,
@@ -30,7 +35,7 @@ const productCardSelect = {
 
 export type ProductCardData = Pick<
   Product,
-  'id' | 'name' | 'slug' | 'price' | 'stock' | 'images' | 'createdAt'
+  'id' | 'name' | 'slug' | 'price' | 'onSale' | 'salePrice' | 'stock' | 'images' | 'createdAt'
 >
 
 export type Pagination = {
@@ -57,17 +62,22 @@ async function fetchHeroSlides(): Promise<HeroSlide[]> {
   return docs
 }
 
+/** Condición del filtro "Oferta" (se suma a la de cada listado). */
+const withFilters = (where: Where, { onSale }: ProductFilters): Where =>
+  onSale ? { and: [where, { onSale: { equals: true } }] } : where
+
 async function fetchProductPreviews(
   collectionId: number,
   limit = PREVIEW_PRODUCTS,
   page = 1,
+  filters: ProductFilters = DEFAULT_FILTERS,
 ): Promise<{ products: ProductCardData[]; pagination: Pagination }> {
   const payload = await getPayloadClient()
   const result = await payload.find({
     collection: 'products',
     overrideAccess: false,
-    where: { collection: { equals: collectionId } },
-    sort: NEWEST_FIRST,
+    where: withFilters({ collection: { equals: collectionId } }, filters),
+    sort: toPayloadSort(filters.sort),
     limit,
     page,
     depth: 1,
@@ -182,6 +192,62 @@ async function fetchRelatedProducts(
 }
 
 // ---------------------------------------------------------------------------
+// Tipos de accesorio (menú "Accesorios" y /accesorios/[slug])
+// ---------------------------------------------------------------------------
+
+export type AccessoryTypeLink = Pick<AccessoryType, 'id' | 'title' | 'slug'>
+
+/** Tipos activos para el menú, en el orden definido en el admin (y por nombre si empata). */
+async function fetchAccessoryTypes(): Promise<AccessoryTypeLink[]> {
+  const payload = await getPayloadClient()
+  const { docs } = await payload.find({
+    collection: 'accessory-types',
+    overrideAccess: false,
+    sort: ['order', 'title'],
+    pagination: false,
+    depth: 0,
+    select: { title: true, slug: true },
+  })
+  return docs
+}
+
+async function fetchAccessoryTypeBySlug(slug: string): Promise<AccessoryType | null> {
+  const payload = await getPayloadClient()
+  const { docs } = await payload.find({
+    collection: 'accessory-types',
+    overrideAccess: false,
+    where: { slug: { equals: slug } },
+    limit: 1,
+    depth: 0,
+  })
+  return docs[0] ?? null
+}
+
+/** Productos activos de un tipo de accesorio (solo de colecciones activas), más recientes primero. */
+async function fetchAccessoryProducts(
+  accessoryTypeId: number,
+  limit = PRODUCTS_PER_PAGE,
+  page = 1,
+  filters: ProductFilters = DEFAULT_FILTERS,
+) {
+  const payload = await getPayloadClient()
+  const result = await payload.find({
+    collection: 'products',
+    overrideAccess: false,
+    where: withFilters(
+      { and: [{ accessoryType: { equals: accessoryTypeId } }, { 'collection.active': { equals: true } }] },
+      filters,
+    ),
+    sort: toPayloadSort(filters.sort),
+    limit,
+    page,
+    depth: 1,
+    select: productCardSelect,
+  })
+  return { products: result.docs as ProductCardData[], pagination: toPagination(result) }
+}
+
+// ---------------------------------------------------------------------------
 // Versiones cacheadas (las que usa el frontend)
 // ---------------------------------------------------------------------------
 
@@ -207,6 +273,16 @@ export const getProductBySlug = cached(fetchProductBySlug, 'product-by-slug', [
 
 export const getRelatedProducts = cached(fetchRelatedProducts, 'related-products', [T.products, T.media])
 
+export const getAccessoryTypes = cached(fetchAccessoryTypes, 'accessory-types', [T.accessoryTypes])
+
+export const getAccessoryTypeBySlug = cached(fetchAccessoryTypeBySlug, 'accessory-type-by-slug', [T.accessoryTypes])
+
+export const getAccessoryProducts = cached(fetchAccessoryProducts, 'accessory-products', [
+  T.products,
+  T.collections,
+  T.media,
+])
+
 // ---------------------------------------------------------------------------
 // Sitemap
 // ---------------------------------------------------------------------------
@@ -214,9 +290,13 @@ export const getRelatedProducts = cached(fetchRelatedProducts, 'related-products
 export type SitemapEntry = { slug: string; updatedAt: string }
 
 /** Slugs y fecha de actualización de todas las colecciones y productos públicos. */
-async function fetchSitemapEntries(): Promise<{ collections: SitemapEntry[]; products: SitemapEntry[] }> {
+async function fetchSitemapEntries(): Promise<{
+  collections: SitemapEntry[]
+  products: SitemapEntry[]
+  accessoryTypes: SitemapEntry[]
+}> {
   const payload = await getPayloadClient()
-  const [collections, products] = await Promise.all([
+  const [collections, products, accessoryTypes] = await Promise.all([
     payload.find({
       collection: 'collections',
       overrideAccess: false,
@@ -231,6 +311,13 @@ async function fetchSitemapEntries(): Promise<{ collections: SitemapEntry[]; pro
       depth: 1,
       select: { slug: true, updatedAt: true, collection: true },
     }),
+    payload.find({
+      collection: 'accessory-types',
+      overrideAccess: false,
+      pagination: false,
+      depth: 0,
+      select: { slug: true, updatedAt: true },
+    }),
   ])
   const toEntry = (doc: { slug?: string | null; updatedAt: string }) =>
     doc.slug ? [{ slug: doc.slug, updatedAt: doc.updatedAt }] : []
@@ -240,10 +327,15 @@ async function fetchSitemapEntries(): Promise<{ collections: SitemapEntry[]; pro
     products: products.docs
       .filter((p) => typeof p.collection === 'object' && p.collection)
       .flatMap(toEntry),
+    accessoryTypes: accessoryTypes.docs.flatMap(toEntry),
   }
 }
 
-export const getSitemapEntries = cached(fetchSitemapEntries, 'sitemap', [T.collections, T.products])
+export const getSitemapEntries = cached(fetchSitemapEntries, 'sitemap', [
+  T.collections,
+  T.products,
+  T.accessoryTypes,
+])
 
 // ---------------------------------------------------------------------------
 // Búsqueda
@@ -254,13 +346,17 @@ export type SearchResults = {
   products: ProductCardData[]
 }
 
-export const SEARCH_MIN_LENGTH = 2
+export { SEARCH_MIN_LENGTH }
 
 /**
  * Busca colecciones (por título y descripción) y productos (por nombre). Además compara contra
  * el slug, que no tiene acentos: así "coleccion" encuentra "Colección".
  */
-async function fetchSearchResults(query: string, limit = 5): Promise<SearchResults> {
+async function fetchSearchResults(
+  query: string,
+  limit = 5,
+  filters: ProductFilters = DEFAULT_FILTERS,
+): Promise<SearchResults> {
   const term = query.trim().slice(0, 80)
   if (term.length < SEARCH_MIN_LENGTH) return { collections: [], products: [] }
   const slugTerm = slugify(term)
@@ -285,10 +381,12 @@ async function fetchSearchResults(query: string, limit = 5): Promise<SearchResul
     payload.find({
       collection: 'products',
       overrideAccess: false,
-      where: {
-        or: [{ name: { like: term } }, ...(slugTerm ? [{ slug: { like: slugTerm } }] : [])],
-      },
-      sort: NEWEST_FIRST,
+      // Los filtros solo aplican a los productos (las colecciones se listan aparte).
+      where: withFilters(
+        { or: [{ name: { like: term } }, ...(slugTerm ? [{ slug: { like: slugTerm } }] : [])] },
+        filters,
+      ),
+      sort: toPayloadSort(filters.sort),
       limit,
       depth: 1,
       select: productCardSelect,

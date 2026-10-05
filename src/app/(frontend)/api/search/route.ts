@@ -1,10 +1,21 @@
 import { getImage } from '@/lib/media'
+import { getPricing } from '@/lib/pricing'
 import { searchCatalog, SEARCH_MIN_LENGTH } from '@/lib/queries'
 
 export type SearchResponse = {
   query: string
   collections: { id: number; title: string; slug: string; image: string | null }[]
-  products: { id: number; name: string; slug: string; price: number; stock: number; image: string | null }[]
+  products: {
+    id: number
+    name: string
+    slug: string
+    /** Precio a cobrar (el de oferta si aplica). */
+    price: number
+    /** Precio anterior, solo si está en oferta. */
+    originalPrice: number | null
+    stock: number
+    image: string | null
+  }[]
 }
 
 // Resultados en vivo del buscador del header (máximo 5 por grupo).
@@ -23,13 +34,17 @@ export async function GET(request: Request) {
       slug: c.slug ?? '',
       image: getImage(c.coverImage, 'thumbnail')?.url ?? null,
     })),
-    products: products.map((p) => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug ?? '',
-      price: p.price,
-      stock: p.stock,
-      image: getImage(p.images?.[0], 'thumbnail')?.url ?? null,
-    })),
+    products: products.map((p) => {
+      const { price, originalPrice } = getPricing(p)
+      return {
+        id: p.id,
+        name: p.name,
+        slug: p.slug ?? '',
+        price,
+        originalPrice,
+        stock: p.stock,
+        image: getImage(p.images?.[0], 'thumbnail')?.url ?? null,
+      }
+    }),
   } satisfies SearchResponse)
 }

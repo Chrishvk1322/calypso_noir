@@ -1,0 +1,41 @@
+# Demo de Calypso Noir: app + PostgreSQL propio, aislados del resto del servidor.
+# La app escucha solo en 127.0.0.1:3100; Nginx del host hace de proxy con HTTPS.
+name: calypso
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: calypso
+      POSTGRES_USER: calypso
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD en .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U calypso -d calypso']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL:?Falta NEXT_PUBLIC_SERVER_URL en .env}
+        DISALLOW_INDEXING: ${DISALLOW_INDEXING:-1}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://calypso:${POSTGRES_PASSWORD}@db:5432/calypso
+      PAYLOAD_SECRET: ${PAYLOAD_SECRET:?Falta PAYLOAD_SECRET en .env}
+      NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL}
+    ports:
+      - '127.0.0.1:3100:3000'
+    volumes:
+      - ./media:/app/media
+
+volumes:
+  db-data:

@@ -6,9 +6,11 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 
+import type { AccessoryTypeLink } from '@/lib/queries'
+
 import { NavLinks } from './NavLinks'
 
-export function MobileNav() {
+export function MobileNav({ accessoryTypes }: { accessoryTypes: AccessoryTypeLink[] }) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -27,6 +29,8 @@ export function MobileNav() {
           <NavLinks
             className="flex flex-col gap-1"
             linkClassName="py-2.5 text-lg after:bottom-1.5"
+            accessoryTypes={accessoryTypes}
+            mobile
             onNavigate={() => setOpen(false)}
           />
         </nav>

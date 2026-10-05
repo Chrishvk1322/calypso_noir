@@ -1,7 +1,8 @@
 import { MailIcon, TruckIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 
-import { InstagramIcon, TikTokIcon, WhatsAppIcon } from '@/components/shop/icons'
+import { WhatsAppIcon } from '@/components/shop/icons'
+import { socialLinks } from '@/components/shop/socials'
 import { Button } from '@/components/ui/button'
 import { getSiteConfig } from '@/lib/site'
 import { buildWhatsAppUrl, formatPhone, socialHandle } from '@/lib/whatsapp'
@@ -22,10 +23,7 @@ export default async function ContactPage() {
     config.contactWhatsappMessage || DEFAULT_CONTACT_MESSAGE,
   )
   const customDesignUrl = buildWhatsAppUrl(config.whatsappNumber, config.customDesignWhatsappMessage)
-  const socials = [
-    { href: config.instagramUrl, label: 'Instagram', Icon: InstagramIcon },
-    { href: config.tiktokUrl, label: 'TikTok', Icon: TikTokIcon },
-  ].filter((s): s is typeof s & { href: string } => Boolean(s.href))
+  const socials = socialLinks(config)
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-12 px-4 py-14 sm:px-6 sm:py-20">

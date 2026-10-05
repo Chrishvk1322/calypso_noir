@@ -51,7 +51,7 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - **Header Superior (Sticky & Responsive):**
   - Muestra el Logo (`/public/assets/logo.jpg`) y el nombre de la tienda: **Calypso Noir**.
   - Enlace directo al Carrito (con badge indicador de cantidad de ítems).
-  - Menú de navegación con los botones: `Home`, `Catálogo`, `Sobre mí`, `Contacto`.
+  - Menú de navegación con los botones: `Home`, `Catálogo`, `Accesorios`, `Sobre mí`, `Contacto`. "Accesorios" despliega (al pasar el mouse, con clic o teclado) los `AccessoryTypes` activos y lleva a `/accesorios/[slug]`; no aparece si no hay tipos.
   - Menú desplegable tipo *Drawer / Hamburger* en dispositivos móviles.
 
 ### 2. Vista Principal (`Home`)
@@ -70,6 +70,9 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - Botón *"Agregar al Carrito"*.
 - Metadatos dinámicos OpenGraph (para previsualizaciones al compartir enlace).
 
+### 3b. Filtros de listados
+- En `/colecciones/[slug]`, `/accesorios/[slug]` y la sección Productos de `/buscar`: check **"Oferta"** y select **"Ordenar por"** (Más recientes, Precio: Mayor a menor, Precio: Menor a mayor, Nombre: A - Z, Nombre: Z - A). Viven en la URL (`?oferta=1&orden=precio-asc`) y la paginación los conserva.
+
 ### 4. Carrito de Compras & Flujo WhatsApp
 - Carrito lateral/modal administrado con Zustand.
 - Cálculo automático del subtotal y total del pedido.
@@ -83,7 +86,7 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 ### 5. Footer (Pie de Página)
 - Texto fijo: *"Enviamos a todo el Perú"*.
 - Correo de contacto editable desde las configuraciones de Payload CMS.
-- Enlaces sociales dinámicos: TikTok e Instagram.
+- Enlaces sociales dinámicos: Instagram, TikTok y Pinterest (solo los que tengan URL en `SiteConfig`).
 - **Botón sobresaliente:** *"¿Deseas un diseño personalizado?"* (Abre chat directo a WhatsApp con mensaje predeterminado para pedidos a medida).
 
 ---
@@ -102,9 +105,13 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - `slug`: Text (Required, autogenerado, indexado)
 - `price`: Number (Required)
 - `stock`: Number (Required, default: 0)
+- `onSale`: Boolean (Default: false) y `salePrice`: Number (precio final de oferta; obligatorio y menor que `price` si `onSale`). En la tienda: precio anterior tachado, precio de oferta destacado y etiqueta "En oferta" en la imagen ("Agotado" tiene prioridad). El checkout cobra el precio de oferta.
+- `effectivePrice`: Number (oculto, lo calcula un hook: precio que se cobra; sirve para ordenar por precio)
+- `sortName`: Text (oculto, lo calcula un hook: nombre en minúsculas y sin tildes; sirve para ordenar por nombre igual en cualquier servidor)
 - `description`: RichText / Text
 - `images`: Media Upload (hasMany)
 - `collection`: Relation -> `Collections` (Required)
+- `accessoryType`: Relation -> `AccessoryTypes` (obligatorio al crear desde el admin y no se puede quitar; los productos anteriores sin tipo siguen funcionando)
 - `active`: Boolean (Default: true)
 
 ### 3. `Orders` (Colección de Payload)
@@ -117,19 +124,27 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - `completedAt`: Date (fecha de venta, se registra al confirmar)
 - Acciones en el admin (con modal de confirmación): **Confirmar** (pendiente → finalizado, descuenta stock), **Cancelar pedido** (elimina un pedido pendiente), **Anular confirmación** (finalizado → pendiente, repone stock) y **Emitir boleta de compra** (PDF, solo finalizados).
 
-### 4. `HeroSlides` (Colección de Payload)
+### 4. `AccessoryTypes` (Colección de Payload, "Tipos de accesorio")
+- `title`: Text (Required)
+- `slug`: Text (autogenerado, único)
+- `order`: Number (orden en el menú; empate por nombre)
+- `active`: Boolean (Default: true)
+
+### 5. `HeroSlides` (Colección de Payload)
 - `title`: Text
 - `subtitle`: Text
 - `image`: Media (Upload)
 - `collectionLink`: Relation -> `Collections`
 - `order`: Number
 
-### 5. `SiteConfig` (Global en Payload CMS)
+### 6. `SiteConfig` (Global en Payload CMS)
+- `announcementEnabled` / `announcementText` (máx. 100) / `announcementLink`: barra de anuncio sobre el carrusel de la Home (check de visibilidad; enlace interno `/…` o `https://…`)
 - `contactEmail`: Text
 - `whatsappMessageTemplate`: Text (Ejemplo: *"¡Hola! Realicé mi pedido {orderCode} por un total de S/.{totalAmount}. Adjunto comprobante de pago."*)
 - `customDesignWhatsappMessage`: Text (Mensaje predeterminado para el botón de diseños personalizados)
 - `tiktokUrl`: Text
 - `instagramUrl`: Text
+- `pinterestUrl`: Text (ícono en el footer y en /contacto)
 - `aboutUsText`: RichText / Text
 - `aboutUsPhotos`: Media (hasMany)
 

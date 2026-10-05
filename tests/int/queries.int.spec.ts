@@ -107,7 +107,7 @@ describe('Consultas del frontend (Fase 4)', () => {
       const { collections } = await getCollectionsFeed(1)
       const product = collections[0].products[0]
       expect(Object.keys(product).sort()).toEqual(
-        ['createdAt', 'id', 'images', 'name', 'price', 'slug', 'stock'].sort(),
+        ['createdAt', 'id', 'images', 'name', 'onSale', 'price', 'salePrice', 'slug', 'stock'].sort(),
       )
     })
   })

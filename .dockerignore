@@ -1,0 +1,15 @@
+node_modules
+.next
+.git
+media
+tests
+.playwright-cli
+.claude
+.vscode
+coverage
+*.log
+.env
+.env.*
+!.env.example
+deploy/*.dump
+deploy/*.tar.gz

@@ -6,10 +6,12 @@ import { cache } from 'react'
 
 import { AddToCart } from '@/components/shop/AddToCart'
 import { ProductCard } from '@/components/shop/ProductCard'
+import { Price } from '@/components/shop/Price'
 import { ProductGallery } from '@/components/shop/ProductGallery'
 import { RichTextContent } from '@/components/shop/RichTextContent'
 import { formatPrice } from '@/lib/format'
 import { getImage } from '@/lib/media'
+import { getPricing } from '@/lib/pricing'
 import { getProductBySlug, getRelatedProducts } from '@/lib/queries'
 import { toPlainText } from '@/lib/richtext'
 
@@ -31,7 +33,7 @@ export async function generateMetadata({ params }: PageProps<'/productos/[slug]'
     alternates: { canonical: `/productos/${product.slug}` },
     openGraph: {
       type: 'website',
-      title: `${product.name} · ${formatPrice(product.price)}`,
+      title: `${product.name} · ${formatPrice(getPricing(product).price)}`,
       description,
       url: `/productos/${product.slug}`,
       siteName: 'Calypso Noir',
@@ -66,6 +68,8 @@ export default async function ProductPage({ params }: PageProps<'/productos/[slu
     return full ? [{ full, thumb: getImage(media, 'thumbnail') }] : []
   })
   const collection = product.collection
+  const { price, originalPrice, onSale } = getPricing(product)
+  const soldOut = product.stock < 1
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-16 px-4 py-8 sm:px-6 sm:py-12">
@@ -90,14 +94,12 @@ export default async function ProductPage({ params }: PageProps<'/productos/[slu
       </nav>
 
       <div className="grid gap-10 md:grid-cols-2 lg:gap-16">
-        <ProductGallery images={images} name={product.name} />
+        <ProductGallery images={images} name={product.name} badge={soldOut ? 'soldOut' : onSale ? 'sale' : null} />
 
         <div className="flex flex-col gap-6 md:sticky md:top-24 md:self-start">
           <div className="space-y-3">
             <h1 className="text-4xl leading-tight sm:text-5xl">{product.name}</h1>
-            <p className="text-2xl font-medium tabular-nums" data-testid="product-price">
-              {formatPrice(product.price)}
-            </p>
+            <Price price={price} originalPrice={originalPrice} className="text-2xl font-medium" data-testid="product-price" />
             <p
               data-testid="product-stock"
               className={product.stock < 1 ? 'text-sm text-destructive' : product.stock <= 3 ? 'text-sm font-medium text-foreground' : 'text-sm text-muted-foreground'}
@@ -111,7 +113,8 @@ export default async function ProductPage({ params }: PageProps<'/productos/[slu
               productId: product.id,
               slug: product.slug ?? slug,
               name: product.name,
-              price: product.price,
+              price,
+              originalPrice,
               stock: product.stock,
               image: getImage(product.images?.[0], 'thumbnail')?.url ?? null,
             }}

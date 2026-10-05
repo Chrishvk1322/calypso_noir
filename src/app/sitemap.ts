@@ -8,7 +8,7 @@ import { SITE_URL } from '@/lib/site-url'
 export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const { collections, products } = await getSitemapEntries()
+  const { collections, products, accessoryTypes } = await getSitemapEntries()
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: `${SITE_URL}/`, changeFrequency: 'daily', priority: 1 },
@@ -22,6 +22,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...collections.map((c) => ({
       url: `${SITE_URL}/colecciones/${c.slug}`,
       lastModified: new Date(c.updatedAt),
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    })),
+    ...accessoryTypes.map((a) => ({
+      url: `${SITE_URL}/accesorios/${a.slug}`,
+      lastModified: new Date(a.updatedAt),
       changeFrequency: 'weekly' as const,
       priority: 0.8,
     })),

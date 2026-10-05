@@ -27,3 +27,12 @@ export function WhatsAppIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   )
 }
+
+export function PinterestIcon(props: SVGProps<SVGSVGElement>) {
+  // Margen en el viewBox: el círculo relleno se ve más grande que los otros íconos de contorno.
+  return (
+    <svg viewBox="-2.5 -2.5 29 29" fill="currentColor" aria-hidden {...props}>
+      <path d="M12.02 0a12 12 0 0 0-4.37 23.17c-.1-.95-.2-2.4.04-3.44l1.4-5.96s-.35-.72-.35-1.78c0-1.66.96-2.9 2.17-2.9 1.02 0 1.52.76 1.52 1.68 0 1.03-.66 2.57-1 4-.28 1.19.6 2.16 1.78 2.16 2.13 0 3.77-2.24 3.77-5.48 0-2.87-2.07-4.87-5.01-4.87-3.41 0-5.41 2.56-5.41 5.2 0 1.03.4 2.14.89 2.74.1.12.11.22.08.35l-.33 1.36c-.05.22-.17.27-.4.16-1.5-.69-2.43-2.88-2.43-4.64 0-3.78 2.75-7.26 7.92-7.26 4.16 0 7.39 2.97 7.39 6.93 0 4.13-2.6 7.46-6.23 7.46-1.21 0-2.35-.63-2.76-1.38l-.75 2.85c-.27 1.04-1 2.35-1.5 3.15A12 12 0 1 0 12.02 0Z" />
+    </svg>
+  )
+}

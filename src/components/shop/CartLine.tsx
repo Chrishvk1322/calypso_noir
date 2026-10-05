@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { formatPrice } from '@/lib/format'
 import { type CartItem, useCart } from '@/stores/cart'
 
+import { Price } from './Price'
 import { QuantitySelector } from './QuantitySelector'
 
 export function CartLine({ item, onNavigate }: { item: CartItem; onNavigate: () => void }) {
@@ -35,7 +36,9 @@ export function CartLine({ item, onNavigate }: { item: CartItem; onNavigate: () 
             >
               {item.name}
             </Link>
-            <p className="text-sm text-muted-foreground tabular-nums">{formatPrice(item.price)} c/u</p>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              <Price as="span" price={item.price} originalPrice={item.originalPrice ?? null} /> c/u
+            </p>
           </div>
           <p className="shrink-0 font-medium tabular-nums" data-testid="cart-line-total">
             {formatPrice(item.price * item.quantity)}

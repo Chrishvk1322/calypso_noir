@@ -29,6 +29,8 @@
   --color-whatsapp: var(--whatsapp);
   --color-whatsapp-hover: var(--whatsapp-hover);
   --color-whatsapp-foreground: var(--whatsapp-foreground);
+  --color-sale: var(--sale);
+  --color-sale-foreground: var(--sale-foreground);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -66,6 +68,10 @@
   --whatsapp: #0f6e52;
   --whatsapp-hover: #0b5a43;
   --whatsapp-foreground: #feffee;
+
+  /* Ofertas: terracota rojizo (contraste ~6.6:1 sobre el crema, como texto y como fondo) */
+  --sale: #a8321e;
+  --sale-foreground: #feffee;
 
   --radius: 0.5rem;
 }

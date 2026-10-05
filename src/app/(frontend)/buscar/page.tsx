@@ -3,7 +3,9 @@ import type { Metadata } from 'next'
 import { SearchIcon } from 'lucide-react'
 
 import { CollectionCard } from '@/components/shop/CollectionCard'
-import { ProductCard } from '@/components/shop/ProductCard'
+import { ProductListing } from '@/components/shop/ProductListing'
+import { SearchPrompt } from '@/components/shop/SearchPrompt'
+import { filteredHref, parseFilters } from '@/lib/filters'
 import { searchCatalog, SEARCH_MIN_LENGTH } from '@/lib/queries'
 
 const FULL_RESULTS_LIMIT = 24
@@ -18,13 +20,17 @@ export async function generateMetadata({ searchParams }: PageProps<'/buscar'>): 
 }
 
 export default async function SearchPage({ searchParams }: PageProps<'/buscar'>) {
-  const { q } = await searchParams
+  const query = await searchParams
+  const { q } = query
   const term = ((Array.isArray(q) ? q[0] : q) ?? '').trim()
+  // "Oferta" y "Ordenar por" solo afectan a los productos.
+  const filters = parseFilters(query)
   const { collections, products } =
     term.length >= SEARCH_MIN_LENGTH
-      ? await searchCatalog(term, FULL_RESULTS_LIMIT)
+      ? await searchCatalog(term, FULL_RESULTS_LIMIT, filters)
       : { collections: [], products: [] }
   const total = collections.length + products.length
+  const searched = term.length >= SEARCH_MIN_LENGTH
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 py-14 sm:px-6 sm:py-20">
@@ -41,7 +47,7 @@ export default async function SearchPage({ searchParams }: PageProps<'/buscar'>)
             className="h-12 w-full bg-transparent text-base outline-none placeholder:text-muted-foreground"
           />
         </form>
-        {term.length >= SEARCH_MIN_LENGTH && (
+        {searched && (
           <p className="text-muted-foreground" role="status">
             {total === 0
               ? `No encontramos resultados para “${term}”. Prueba con otra palabra o revisa el catálogo.`
@@ -49,6 +55,8 @@ export default async function SearchPage({ searchParams }: PageProps<'/buscar'>)
           </p>
         )}
       </header>
+
+      {!searched && <SearchPrompt term={term} />}
 
       {collections.length > 0 && (
         <section aria-labelledby="resultados-colecciones" className="flex flex-col gap-6">
@@ -65,18 +73,17 @@ export default async function SearchPage({ searchParams }: PageProps<'/buscar'>)
         </section>
       )}
 
-      {products.length > 0 && (
+      {(products.length > 0 || (searched && filters.onSale)) && (
         <section aria-labelledby="resultados-productos" className="flex flex-col gap-6">
           <h2 id="resultados-productos" className="text-3xl">
             Productos
           </h2>
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 sm:gap-x-6 lg:grid-cols-4">
-            {products.map((product) => (
-              <li key={product.id}>
-                <ProductCard product={product} />
-              </li>
-            ))}
-          </ul>
+          <ProductListing
+            products={products}
+            filters={filters}
+            clearSaleHref={filteredHref('/buscar', { ...filters, onSale: false }, { q: term })}
+            priorityCount={0}
+          />
         </section>
       )}
     </div>

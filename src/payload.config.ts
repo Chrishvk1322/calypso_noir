@@ -6,6 +6,7 @@ import { es } from 'payload/i18n/es'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
+import { AccessoryTypes } from './collections/AccessoryTypes'
 import { Collections } from './collections/Collections'
 import { HeroSlides } from './collections/HeroSlides'
 import { Media } from './collections/Media'
@@ -13,6 +14,7 @@ import { Orders } from './collections/Orders'
 import { Products } from './collections/Products'
 import { Users } from './collections/Users'
 import { SiteConfig } from './globals/SiteConfig'
+import { withAdminDefaults, withoutDocumentTabs } from './lib/admin-config'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -34,8 +36,11 @@ export default buildConfig({
     supportedLanguages: { es },
     fallbackLanguage: 'es',
   },
-  collections: [Orders, Products, Collections, HeroSlides, Media, Users],
-  globals: [SiteConfig],
+  // Sin pestañas "Editar"/"API" y con "Cancelar" al crear (ver lib/admin-config.ts).
+  collections: [Orders, Products, Collections, AccessoryTypes, HeroSlides, Media, Users].map(
+    withAdminDefaults,
+  ),
+  globals: [SiteConfig].map(withoutDocumentTabs),
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

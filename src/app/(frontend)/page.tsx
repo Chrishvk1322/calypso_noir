@@ -1,15 +1,19 @@
 import { notFound } from 'next/navigation'
 
+import { AnnouncementBar } from '@/components/shop/AnnouncementBar'
 import { CollectionSection } from '@/components/shop/CollectionSection'
 import { HeroCarousel, type HeroSlideData } from '@/components/shop/HeroCarousel'
 import { Pagination } from '@/components/shop/Pagination'
+import { getAnnouncement } from '@/lib/announcement'
 import { parsePage } from '@/lib/format'
 import { getImage } from '@/lib/media'
 import { getCollectionsFeed, getHeroSlides } from '@/lib/queries'
+import { getSiteConfig } from '@/lib/site'
 
 export default async function HomePage({ searchParams }: PageProps<'/'>) {
   const page = parsePage((await searchParams).page)
-  const [slides, feed] = await Promise.all([getHeroSlides(), getCollectionsFeed(page)])
+  const [slides, feed, site] = await Promise.all([getHeroSlides(), getCollectionsFeed(page), getSiteConfig()])
+  const announcement = getAnnouncement(site)
 
   if (page > 1 && page > feed.pagination.totalPages) notFound()
 
@@ -29,6 +33,7 @@ export default async function HomePage({ searchParams }: PageProps<'/'>) {
     <>
       {/* El h1 va antes del carrusel para que la jerarquía de títulos sea correcta. */}
       <h1 className="sr-only">Calypso Noir: piezas hechas a mano en arcilla polimérica</h1>
+      {announcement && <AnnouncementBar announcement={announcement} />}
       <HeroCarousel slides={heroSlides} />
 
       <div id="colecciones" className="mx-auto flex max-w-6xl scroll-mt-20 flex-col gap-16 px-4 py-14 sm:px-6 sm:py-20">

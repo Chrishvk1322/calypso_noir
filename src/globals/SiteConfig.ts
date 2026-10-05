@@ -2,6 +2,8 @@ import type { GlobalConfig } from 'payload'
 
 import { anyone, authenticated } from '@/access'
 import { revalidateGlobalAfterChange } from '@/hooks/revalidate'
+import { ANNOUNCEMENT_MAX_LENGTH, isValidAnnouncementLink } from '@/lib/announcement'
+import type { SiteConfig as SiteConfigType } from '@/payload-types'
 
 export const SiteConfig: GlobalConfig = {
   slug: 'site-config',
@@ -20,6 +22,44 @@ export const SiteConfig: GlobalConfig = {
     {
       type: 'tabs',
       tabs: [
+        {
+          label: 'Barra de anuncio',
+          description: 'Franja fina encima del carrusel de la página principal.',
+          fields: [
+            {
+              name: 'announcementEnabled',
+              type: 'checkbox',
+              label: 'Mostrar barra de anuncio',
+              defaultValue: false,
+            },
+            {
+              name: 'announcementText',
+              type: 'text',
+              label: 'Texto del anuncio',
+              maxLength: ANNOUNCEMENT_MAX_LENGTH,
+              admin: {
+                description: `Máximo ${ANNOUNCEMENT_MAX_LENGTH} caracteres. Mientras más corto, más fina la franja: hasta ~45 caracteres se ve en una sola línea en celulares. Ej: Envío gratis en Lima desde S/. 100`,
+              },
+              // Un `validate` propio reemplaza la validación por defecto (incluido `maxLength`).
+              validate: (value: string | null | undefined, { siblingData }: { siblingData: Partial<SiteConfigType> }) => {
+                const text = value?.trim() ?? ''
+                if (siblingData.announcementEnabled && !text) return 'Escribe el texto o desactiva la barra.'
+                if (text.length > ANNOUNCEMENT_MAX_LENGTH) return `Máximo ${ANNOUNCEMENT_MAX_LENGTH} caracteres.`
+                return true
+              },
+            },
+            {
+              name: 'announcementLink',
+              type: 'text',
+              label: 'Enlace (opcional)',
+              admin: {
+                description: 'Página de la tienda (ej: /catalogo o /colecciones/verano-citrico) o dirección completa (https://…).',
+              },
+              validate: (value: string | null | undefined) =>
+                !value?.trim() || isValidAnnouncementLink(value) || 'Usa una ruta que empiece con "/" o una dirección https://…',
+            },
+          ],
+        },
         {
           label: 'Contacto y WhatsApp',
           fields: [
@@ -74,6 +114,7 @@ export const SiteConfig: GlobalConfig = {
           fields: [
             { name: 'tiktokUrl', type: 'text', label: 'URL de TikTok' },
             { name: 'instagramUrl', type: 'text', label: 'URL de Instagram' },
+            { name: 'pinterestUrl', type: 'text', label: 'URL de Pinterest' },
           ],
         },
         {

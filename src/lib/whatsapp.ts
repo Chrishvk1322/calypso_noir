@@ -37,11 +37,16 @@ export const formatPhone = (phone: string | null | undefined): string => {
   return `+${digits}`
 }
 
+const SHORT_LINK_HOSTS = new Set(['pin.it'])
+
 /** "https://www.instagram.com/calypsonoir/" → "@calypsonoir" (null si no hay usuario). */
 export const socialHandle = (url: string | null | undefined): string | null => {
   if (!url) return null
   try {
-    const segment = new URL(url).pathname.split('/').find(Boolean)
+    const { hostname, pathname } = new URL(url)
+    // Enlaces cortos (pin.it/abc123): el segmento es un código, no el usuario.
+    if (SHORT_LINK_HOSTS.has(hostname)) return null
+    const segment = pathname.split('/').find(Boolean)
     return segment ? `@${segment.replace(/^@/, '')}` : null
   } catch {
     return null

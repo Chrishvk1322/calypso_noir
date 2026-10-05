@@ -8,7 +8,10 @@ export type CartItem = {
   productId: number
   slug: string
   name: string
+  /** Precio unitario al agregarlo (el de oferta si aplica); el servidor recalcula al comprar. */
   price: number
+  /** Precio anterior si estaba en oferta (solo para mostrarlo tachado). */
+  originalPrice?: number | null
   stock: number
   image?: string | null
   quantity: number

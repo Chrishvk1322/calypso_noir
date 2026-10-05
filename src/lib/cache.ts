@@ -7,6 +7,7 @@ import { unstable_cache } from 'next/cache'
  */
 export const CACHE_TAGS = {
   collections: 'collections',
+  accessoryTypes: 'accessory-types',
   products: 'products',
   heroSlides: 'hero-slides',
   media: 'media',

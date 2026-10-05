@@ -70,6 +70,7 @@ export interface Config {
     orders: Order;
     products: Product;
     collections: Collection;
+    'accessory-types': AccessoryType;
     'hero-slides': HeroSlide;
     media: Media;
     users: User;
@@ -83,6 +84,7 @@ export interface Config {
     orders: OrdersSelect<false> | OrdersSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     collections: CollectionsSelect<false> | CollectionsSelect<true>;
+    'accessory-types': AccessoryTypesSelect<false> | AccessoryTypesSelect<true>;
     'hero-slides': HeroSlidesSelect<false> | HeroSlidesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
@@ -182,6 +184,16 @@ export interface Product {
   slug?: string | null;
   price: number;
   stock: number;
+  /**
+   * Muestra el precio anterior tachado y la etiqueta "En oferta".
+   */
+  onSale?: boolean | null;
+  /**
+   * Precio final que paga el cliente mientras dure la oferta.
+   */
+  salePrice?: number | null;
+  effectivePrice?: number | null;
+  sortName?: string | null;
   description?: {
     root: {
       type: string;
@@ -199,6 +211,10 @@ export interface Product {
   } | null;
   images?: (number | Media)[] | null;
   collection: number | Collection;
+  /**
+   * Lo ubica en el menú "Accesorios" de la tienda.
+   */
+  accessoryType?: (number | null) | AccessoryType;
   active?: boolean | null;
   updatedAt: string;
   createdAt: string;
@@ -269,6 +285,27 @@ export interface Collection {
   slug?: string | null;
   description?: string | null;
   coverImage?: (number | null) | Media;
+  active?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Aparecen en el menú "Accesorios" de la tienda (aretes, collares, anillos…).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accessory-types".
+ */
+export interface AccessoryType {
+  id: number;
+  title: string;
+  /**
+   * Se genera automáticamente si se deja vacío.
+   */
+  slug?: string | null;
+  /**
+   * Menor número = más arriba. Si se repite, se ordena por nombre.
+   */
+  order?: number | null;
   active?: boolean | null;
   updatedAt: string;
   createdAt: string;
@@ -350,6 +387,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'collections';
         value: number | Collection;
+      } | null)
+    | ({
+        relationTo: 'accessory-types';
+        value: number | AccessoryType;
       } | null)
     | ({
         relationTo: 'hero-slides';
@@ -438,9 +479,14 @@ export interface ProductsSelect<T extends boolean = true> {
   slug?: T;
   price?: T;
   stock?: T;
+  onSale?: T;
+  salePrice?: T;
+  effectivePrice?: T;
+  sortName?: T;
   description?: T;
   images?: T;
   collection?: T;
+  accessoryType?: T;
   active?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -454,6 +500,18 @@ export interface CollectionsSelect<T extends boolean = true> {
   slug?: T;
   description?: T;
   coverImage?: T;
+  active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "accessory-types_select".
+ */
+export interface AccessoryTypesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  order?: T;
   active?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -602,6 +660,15 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
  */
 export interface SiteConfig {
   id: number;
+  announcementEnabled?: boolean | null;
+  /**
+   * Máximo 100 caracteres. Mientras más corto, más fina la franja: hasta ~45 caracteres se ve en una sola línea en celulares. Ej: Envío gratis en Lima desde S/. 100
+   */
+  announcementText?: string | null;
+  /**
+   * Página de la tienda (ej: /catalogo o /colecciones/verano-citrico) o dirección completa (https://…).
+   */
+  announcementLink?: string | null;
   contactEmail?: string | null;
   /**
    * Con código de país, sin espacios ni "+". Ej: 51987654321
@@ -619,6 +686,7 @@ export interface SiteConfig {
   customDesignWhatsappMessage?: string | null;
   tiktokUrl?: string | null;
   instagramUrl?: string | null;
+  pinterestUrl?: string | null;
   aboutUsText?: {
     root: {
       type: string;
@@ -643,6 +711,9 @@ export interface SiteConfig {
  * via the `definition` "site-config_select".
  */
 export interface SiteConfigSelect<T extends boolean = true> {
+  announcementEnabled?: T;
+  announcementText?: T;
+  announcementLink?: T;
   contactEmail?: T;
   whatsappNumber?: T;
   whatsappMessageTemplate?: T;
@@ -651,6 +722,7 @@ export interface SiteConfigSelect<T extends boolean = true> {
   customDesignWhatsappMessage?: T;
   tiktokUrl?: T;
   instagramUrl?: T;
+  pinterestUrl?: T;
   aboutUsText?: T;
   aboutUsPhotos?: T;
   updatedAt?: T;

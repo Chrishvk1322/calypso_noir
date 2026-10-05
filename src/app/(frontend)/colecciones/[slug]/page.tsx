@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { Pagination } from '@/components/shop/Pagination'
-import { ProductCard } from '@/components/shop/ProductCard'
+import { ProductListing } from '@/components/shop/ProductListing'
+import { filteredHref, filtersToParams, parseFilters } from '@/lib/filters'
 import { parsePage } from '@/lib/format'
 import { getImage } from '@/lib/media'
 import { getCollectionBySlug, getProductPreviews, PRODUCTS_PER_PAGE } from '@/lib/queries'
@@ -30,11 +31,12 @@ export async function generateMetadata({ params }: PageProps<'/colecciones/[slug
 export default async function CollectionPage({ params, searchParams }: PageProps<'/colecciones/[slug]'>) {
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const page = parsePage(query.page)
+  const filters = parseFilters(query)
 
   const collection = await getCollectionBySlug(slug)
   if (!collection) notFound()
 
-  const { products, pagination } = await getProductPreviews(collection.id, PRODUCTS_PER_PAGE, page)
+  const { products, pagination } = await getProductPreviews(collection.id, PRODUCTS_PER_PAGE, page, filters)
   if (page > 1 && page > pagination.totalPages) notFound()
 
   const cover = getImage(collection.coverImage, 'hero')
@@ -62,25 +64,18 @@ export default async function CollectionPage({ params, searchParams }: PageProps
       </header>
 
       <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 py-12 sm:px-6 sm:py-16">
-        <p className="text-sm text-muted-foreground">
-          {pagination.totalDocs === 1 ? '1 pieza' : `${pagination.totalDocs} piezas`}
-        </p>
+        <ProductListing
+          products={products}
+          filters={filters}
+          clearSaleHref={filteredHref(`/colecciones/${collection.slug}`, { ...filters, onSale: false })}
+        />
 
-        {products.length > 0 ? (
-          <ul className="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 sm:gap-x-6 lg:grid-cols-4">
-            {products.map((product, index) => (
-              <li key={product.id}>
-                <ProductCard product={product} priority={index < 4} />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="rounded-md border border-dashed px-4 py-12 text-center text-muted-foreground">
-            Nuevas piezas muy pronto.
-          </p>
-        )}
-
-        <Pagination page={pagination.page} totalPages={pagination.totalPages} basePath={`/colecciones/${collection.slug}`} />
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          basePath={`/colecciones/${collection.slug}`}
+          params={filtersToParams(filters)}
+        />
       </div>
     </>
   )

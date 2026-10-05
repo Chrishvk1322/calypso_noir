@@ -14,3 +14,9 @@ next-env.d.ts
 /coverage
 /build
 /test-results/
+
+# Copias para despliegue (contienen datos)
+deploy/
+
+# Documentación interna del despliegue (infraestructura del servidor)
+DESPLIEGUE-DEMO.md

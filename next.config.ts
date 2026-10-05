@@ -7,6 +7,8 @@ const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
 
 const nextConfig: NextConfig = {
+  // Build autocontenido para Docker (ver Dockerfile).
+  output: 'standalone',
   experimental: {
     // 404 propia para URLs inexistentes (src/app/global-not-found.tsx): la app tiene dos
     // layouts raíz (tienda y admin), así que no hay un layout común para un not-found raíz.

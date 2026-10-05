@@ -9,9 +9,11 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { SearchResponse } from '@/app/(frontend)/api/search/route'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { formatPrice } from '@/lib/format'
+import { SEARCH_MIN_LENGTH as MIN_LENGTH } from '@/lib/search'
 
-const MIN_LENGTH = 2
+import { Price } from './Price'
+import { SearchPrompt } from './SearchPrompt'
+
 const DEBOUNCE_MS = 250
 
 type State = { status: 'idle' } | { status: 'loading' } | { status: 'done'; data: SearchResponse } | { status: 'error' }
@@ -22,6 +24,8 @@ export function SearchDialog() {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [state, setState] = useState<State>({ status: 'idle' })
+  // Enter sin texto suficiente: en vez de la ayuda corta, se muestra el aviso con el catálogo.
+  const [submittedEmpty, setSubmittedEmpty] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const listId = useId()
 
@@ -34,6 +38,7 @@ export function SearchDialog() {
           if (value) {
             setQuery('')
             setState({ status: 'idle' })
+            setSubmittedEmpty(false)
           }
           return !value
         })
@@ -72,6 +77,7 @@ export function SearchDialog() {
     if (!value) {
       setQuery('')
       setState({ status: 'idle' })
+      setSubmittedEmpty(false)
     }
   }
   const close = () => changeOpen(false)
@@ -103,7 +109,11 @@ export function SearchDialog() {
           className="flex items-center gap-3 border-b px-4"
           onSubmit={(event) => {
             event.preventDefault()
-            if (!ready) return
+            if (!ready) {
+              setSubmittedEmpty(true)
+              inputRef.current?.focus()
+              return
+            }
             close()
             router.push(`/buscar?q=${encodeURIComponent(term)}`)
           }}
@@ -118,7 +128,10 @@ export function SearchDialog() {
             type="search"
             name="q"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value)
+              setSubmittedEmpty(false)
+            }}
             placeholder="Buscar colecciones o productos…"
             aria-label="Buscar colecciones o productos"
             aria-controls={listId}
@@ -128,11 +141,14 @@ export function SearchDialog() {
         </form>
 
         <div id={listId} className="max-h-[60svh] overflow-y-auto" aria-live="polite">
-          {!ready && (
-            <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-              Escribe al menos {MIN_LENGTH} letras para buscar.
-            </p>
-          )}
+          {!ready &&
+            (submittedEmpty ? (
+              <SearchPrompt term={term} onNavigate={close} className="px-4 py-8" />
+            ) : (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                Escribe al menos {MIN_LENGTH} letras para buscar.
+              </p>
+            ))}
           {ready && state.status === 'error' && (
             <p className="px-4 py-8 text-center text-sm text-destructive">No pudimos buscar. Inténtalo de nuevo.</p>
           )}
@@ -180,7 +196,11 @@ export function SearchDialog() {
                       <Thumb src={product.image} />
                       <span className="min-w-0 flex-1 truncate">{product.name}</span>
                       <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
-                        {product.stock < 1 ? 'Agotado' : formatPrice(product.price)}
+                        {product.stock < 1 ? (
+                          'Agotado'
+                        ) : (
+                          <Price as="span" price={product.price} originalPrice={product.originalPrice} />
+                        )}
                       </span>
                     </Link>
                   </li>
