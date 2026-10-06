@@ -39,7 +39,7 @@ export default async function CollectionPage({ params, searchParams }: PageProps
   const { products, pagination } = await getProductPreviews(collection.id, PRODUCTS_PER_PAGE, page, filters)
   if (page > 1 && page > pagination.totalPages) notFound()
 
-  const cover = getImage(collection.coverImage, 'hero')
+  const cover = getImage(collection.coverImage)
 
   return (
     <>

@@ -183,13 +183,13 @@ describe('Utilidades de presentación', () => {
       createdAt: '2026-10-03T00:00:00.000Z',
       sizes: {
         card: { url: 'http://localhost:3000/api/media/file/a-600x750.webp', width: 600, height: 750 },
-        hero: { url: null, width: null, height: null },
+        og: { url: null, width: null, height: null },
       },
     } as never
 
     const v = `?v=${Date.parse('2026-10-03T00:00:00.000Z')}`
     expect(getImage(media, 'card')).toEqual({ url: `/api/media/file/a-600x750.webp${v}`, alt: 'Foto', width: 600, height: 750 })
-    expect(getImage(media, 'hero')?.url).toBe(`/api/media/file/a.webp${v}`)
+    expect(getImage(media, 'og')?.url).toBe(`/api/media/file/a.webp${v}`)
     expect(getImage(7)).toBeNull()
     expect(getImage(null)).toBeNull()
   })

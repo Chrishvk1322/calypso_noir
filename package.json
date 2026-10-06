@@ -17,7 +17,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "seed": "cross-env NODE_OPTIONS=--no-deprecation payload run src/scripts/seed.ts",
     "seed:reset": "cross-env SEED_RESET=1 NODE_OPTIONS=--no-deprecation payload run src/scripts/seed.ts",
-    "backfill:products": "cross-env NODE_OPTIONS=--no-deprecation payload run src/scripts/backfill-products.ts"
+    "backfill:products": "cross-env NODE_OPTIONS=--no-deprecation payload run src/scripts/backfill-products.ts",
+    "media:optimize": "cross-env NODE_OPTIONS=--no-deprecation payload run src/scripts/optimize-media.ts"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "3.90.2",

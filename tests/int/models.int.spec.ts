@@ -280,7 +280,7 @@ describe('Modelos del CMS', () => {
   describe('Media (sharp)', () => {
     it('convierte el original a WebP y genera todos los tamaños', () => {
       expect(media.mimeType).toBe('image/webp')
-      for (const size of ['thumbnail', 'card', 'hero', 'og'] as const) {
+      for (const size of ['thumbnail', 'card', 'og'] as const) {
         expect(media.sizes?.[size]?.url, `tamaño ${size}`).toBeTruthy()
       }
       expect(media.sizes?.og?.mimeType).toBe('image/jpeg')

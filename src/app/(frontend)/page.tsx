@@ -21,7 +21,7 @@ export default async function HomePage({ searchParams }: PageProps<'/'>) {
     id: slide.id,
     title: slide.title,
     subtitle: slide.subtitle,
-    image: getImage(slide.image, 'hero'),
+    image: getImage(slide.image),
     // Si la colección enlazada está inactiva, Payload no la puebla y el botón no se muestra.
     href:
       slide.collectionLink && typeof slide.collectionLink === 'object'

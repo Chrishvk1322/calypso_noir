@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { authenticated, authenticatedOrActive } from '@/access'
 import { slugField } from '@/fields/slug'
+import { deleteOrphanImages } from '@/hooks/media'
 import { setSortFields } from '@/hooks/products'
 import { revalidateAfterChange, revalidateAfterDelete } from '@/hooks/revalidate'
 import { isValidSalePrice } from '@/lib/pricing'
@@ -25,7 +26,7 @@ export const Products: CollectionConfig = {
   hooks: {
     beforeChange: [setSortFields],
     afterChange: [revalidateAfterChange(['products'])],
-    afterDelete: [revalidateAfterDelete(['products'])],
+    afterDelete: [deleteOrphanImages, revalidateAfterDelete(['products'])],
   },
   fields: [
     { name: 'name', type: 'text', label: 'Nombre', required: true },

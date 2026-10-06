@@ -20,6 +20,9 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - Todo el código debe estar estrictamente en TypeScript.
 - Usar la Local API de Payload dentro de Next.js (`payload.find()`) para consultas del servidor.
 - Las imágenes de productos deben optimizarse localmente mediante `sharp`.
+  - Original en WebP (calidad 80, máx. 2000px; `next/image` lo reduce para cada pantalla) + tamaños `thumbnail`, `card` y `og` (JPG). Sin tamaño `hero`: carrusel y portada de colección usan el original.
+  - Los recortes hechos en el admin también se convierten y reducen (hook `normalizeOriginal`, Payload no lo hace solo).
+  - Al borrar un producto se borran sus imágenes si nada más las usa (otro producto, portada de colección, slide o fotos de "Sobre mí").
 - Mantener la separación de componentes de UI (`/components/ui`) y componentes de negocio (`/components/shop`).
 
 ---
@@ -147,6 +150,30 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - `pinterestUrl`: Text (ícono en el footer y en /contacto)
 - `aboutUsText`: RichText / Text
 - `aboutUsPhotos`: Media (hasMany)
+
+---
+
+## Despliegue y Migraciones de Base de Datos
+
+### 1. Cómo evoluciona el esquema
+- **Desarrollo local:** Payload usa *push* (sincroniza las tablas solo al arrancar `pnpm dev`). No deja registro y puede borrar columnas: sirve solo en local.
+- **Producción:** **nunca** push ni copiar la base local (`pg_dump`/`pg_restore` de dev reemplazaría pedidos, stock y contenido reales). El esquema cambia **solo con migraciones de Payload** versionadas en `src/migrations/` (generadas con `pnpm payload migrate:create <nombre>`, con `up` y `down`, registradas en la tabla `payload_migrations`).
+- **Regla:** todo cambio de campos/colecciones/globals que se commitee debe ir acompañado de su migración generada. Revisar el SQL generado antes de commitear (que no haga `DROP` de datos sin querer; un renombre se escribe a mano como `RENAME`).
+- **Imágenes previas a la optimización:** las bases creadas antes de quitar el tamaño `hero` necesitan `pnpm media:optimize` (borra archivos y columnas `sizes_hero_*`, convierte a WebP los recortes en JPEG; idempotente). En la imagen standalone no hay CLI: en la Fase 9 este paso va dentro de una migración o se ejecuta desde un contenedor con el código completo.
+- **Datos calculados:** si una migración agrega campos derivados (como `effectivePrice` / `sortName`), el relleno de los registros existentes va dentro de la propia migración o se documenta su script (hoy `pnpm backfill:products`, que no toca `updatedAt`).
+
+### 2. Migración inicial (baseline)
+- La primera migración contiene el esquema completo actual (Fases 0–8). Un servidor vacío la aplica y queda con todas las tablas.
+- En bases que ya tienen ese esquema (dev local y demo de Azure) se marca como aplicada sin ejecutarla (insertar su fila en `payload_migrations`), sin borrar ni recrear nada.
+
+### 3. Requisitos para el Dockerfile / despliegue limpio
+- La imagen es `output: 'standalone'` y **no incluye el CLI de Payload**: las migraciones se aplican al iniciar la app con `prodMigrations` del adaptador (`postgresAdapter({ prodMigrations: migrations })` importando `src/migrations/index.ts`). Así el contenedor nunca arranca con un esquema desactualizado y no hace falta un paso manual.
+- El build no consulta la base (páginas dinámicas): usa `PAYLOAD_SECRET`/`DATABASE_URL` ficticios. Variables de build: `NEXT_PUBLIC_SERVER_URL` y `DISALLOW_INDEXING` (`1` solo en la demo; `0` en producción para que Google indexe).
+- Secretos en runtime (`.env` del servidor / secrets de GitHub), nunca en la imagen ni en git: `DATABASE_URL`, `PAYLOAD_SECRET`, `POSTGRES_PASSWORD` y los del adaptador de correo.
+- Persistencia fuera del contenedor: volumen de PostgreSQL y carpeta `media/` (montada en `/app/media`, dueño uid 1001). Ambos entran en los backups programados.
+- La app corre como usuario no root, escucha en `127.0.0.1` y el proxy (Nginx o el de Coolify) termina HTTPS, con rate limiting en `/api/orders` y `/api/search`.
+- La imagen se construye en **GitHub Actions** (lint, typecheck, Vitest, build → `ghcr.io`) y el VPS solo hace `pull` + `up -d`: el build de Next necesita varios GB de RAM y no debe correr en el VPS de producción.
+- Orden de un despliegue: backup de la base → pull de la imagen → arranque (aplica migraciones pendientes) → verificación de salud. Si una migración falla, la app no arranca y se restaura el backup / se vuelve a la imagen anterior.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
