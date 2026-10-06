@@ -13,6 +13,7 @@ import { Media } from './collections/Media'
 import { Orders } from './collections/Orders'
 import { Products } from './collections/Products'
 import { Users } from './collections/Users'
+import { migrations } from './migrations'
 import { SiteConfig } from './globals/SiteConfig'
 import { withAdminDefaults, withoutDocumentTabs } from './lib/admin-config'
 
@@ -50,6 +51,9 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },
+    // En producción las migraciones pendientes se aplican al arrancar (la imagen standalone no
+    // trae el CLI de Payload). En desarrollo se sigue usando push. Ver CLAUDE.md → Despliegue.
+    prodMigrations: migrations,
   }),
   sharp,
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000',

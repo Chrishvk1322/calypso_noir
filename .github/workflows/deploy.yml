@@ -1,0 +1,114 @@
+# CI/CD de Calypso Noir: revisa el código, construye la imagen en GitHub, la publica en ghcr.io y
+# avisa a Coolify para que la despliegue. El VPS nunca compila.
+#   - Pull request: solo revisión (lint, tipos, pruebas).
+#   - Push a main o ejecución manual: revisión → imagen → despliegue.
+# Configuración del repositorio (Settings → Secrets and variables → Actions):
+#   - Variable NEXT_PUBLIC_SERVER_URL: URL pública (https://calypsonoir.com). Se incrusta al compilar.
+#   - Variable DISALLOW_INDEXING (opcional): "1" para bloquear buscadores (demos). Por defecto "0".
+#   - Secretos COOLIFY_WEBHOOK (Deploy Webhook del recurso) y COOLIFY_TOKEN (token de la API).
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Un despliegue a la vez; uno nuevo espera a que termine el anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Lint, tipos y pruebas
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: calypso_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      # Sin .env.test en CI: vitest.setup.ts lo omite y se usan estas variables.
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/calypso_test
+      PAYLOAD_SECRET: ci-only-secret
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # pnpm fijado en package.json (packageManager), igual que en el Dockerfile.
+      - name: Activar pnpm
+        run: |
+          corepack enable
+          pnpm --version
+          echo "PNPM_STORE=$(pnpm store path --silent)" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.PNPM_STORE }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  image:
+    name: Imagen Docker → ghcr.io
+    needs: check
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.meta.outputs.image }}:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      # ghcr.io exige el nombre de la imagen en minúsculas.
+      - id: meta
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: |
+            NEXT_PUBLIC_SERVER_URL=${{ vars.NEXT_PUBLIC_SERVER_URL }}
+            DISALLOW_INDEXING=${{ vars.DISALLOW_INDEXING || '0' }}
+          # latest = lo que despliega Coolify; el SHA permite volver a una versión anterior.
+          tags: |
+            ${{ steps.meta.outputs.image }}:latest
+            ${{ steps.meta.outputs.image }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Desplegar en Coolify
+    needs: image
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Avisar a Coolify
+        env:
+          COOLIFY_WEBHOOK: ${{ secrets.COOLIFY_WEBHOOK }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          if [ -z "$COOLIFY_WEBHOOK" ] || [ -z "$COOLIFY_TOKEN" ]; then
+            echo "::error::Faltan los secretos COOLIFY_WEBHOOK y/o COOLIFY_TOKEN"
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error --max-time 60 \
+            -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_WEBHOOK"
+          echo "Desplegando ${{ needs.image.outputs.tag }}"

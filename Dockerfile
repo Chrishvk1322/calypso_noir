@@ -1,5 +1,7 @@
 # Imagen de producción de Calypso Noir (Next.js standalone + Payload).
-# Uso: docker compose -f docker-compose.demo.yml up -d --build
+# Producción: la construye GitHub Actions (.github/workflows/deploy.yml), se publica en ghcr.io y
+# Coolify la despliega. Demo: docker compose -f docker-compose.demo.yml up -d --build
+# Al arrancar, Payload aplica las migraciones pendientes (prodMigrations en payload.config.ts).
 
 FROM node:24-alpine AS base
 RUN apk add --no-cache libc6-compat
@@ -38,4 +40,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 RUN mkdir -p media .next/cache && chown -R nextjs:nodejs media .next
 USER nextjs
 EXPOSE 3000
+# Responde 200 si la app está arriba y llega a la base (src/app/(frontend)/api/health).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3   CMD wget -qO- http://127.0.0.1:3000/api/health > /dev/null || exit 1
 CMD ["node", "server.js"]

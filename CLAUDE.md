@@ -12,7 +12,7 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - **Estilos & UI:** Tailwind CSS + `shadcn/ui` + Lucide Icons
 - **Gestión de Estado (Cliente):** Zustand (Carrito con persistencia en `localStorage`)
 - **Procesamiento de Imágenes:** `sharp` (optimización nativa local)
-- **Despliegue:** Docker & Docker Compose en VPS Linux (Nginx) + Github Actions (dejarlo para las fases finales)
+- **Despliegue:** Docker + GitHub Actions (CI y build de la imagen en `ghcr.io`) + Coolify en el VPS (proxy Traefik con HTTPS; dominio `calypsonoir.com` detrás de Cloudflare). La demo de Azure usa Docker Compose + Nginx.
 
 ---
 
@@ -163,16 +163,19 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - **Datos calculados:** si una migración agrega campos derivados (como `effectivePrice` / `sortName`), el relleno de los registros existentes va dentro de la propia migración o se documenta su script (hoy `pnpm backfill:products`, que no toca `updatedAt`).
 
 ### 2. Migración inicial (baseline)
-- La primera migración contiene el esquema completo actual (Fases 0–8). Un servidor vacío la aplica y queda con todas las tablas.
-- En bases que ya tienen ese esquema (dev local y demo de Azure) se marca como aplicada sin ejecutarla (insertar su fila en `payload_migrations`), sin borrar ni recrear nada.
+- `src/migrations/20261006_061451_initial.ts` contiene el esquema completo (Fases 0–8 + optimización de imágenes). Un servidor vacío la aplica y queda con todas las tablas.
+- En bases que ya tienen ese esquema se marca como aplicada sin ejecutarla (insertar su fila en `payload_migrations` con `batch = 1`), sin borrar ni recrear nada. Hecho en la base dev local; la demo de Azure no está marcada.
+- Nuevas migraciones: `pnpm payload migrate:create <nombre>` (actualiza `src/migrations/index.ts`); después se marca como aplicada en la base dev, porque ahí el esquema ya lo aplicó el push.
 
 ### 3. Requisitos para el Dockerfile / despliegue limpio
 - La imagen es `output: 'standalone'` y **no incluye el CLI de Payload**: las migraciones se aplican al iniciar la app con `prodMigrations` del adaptador (`postgresAdapter({ prodMigrations: migrations })` importando `src/migrations/index.ts`). Así el contenedor nunca arranca con un esquema desactualizado y no hace falta un paso manual.
 - El build no consulta la base (páginas dinámicas): usa `PAYLOAD_SECRET`/`DATABASE_URL` ficticios. Variables de build: `NEXT_PUBLIC_SERVER_URL` y `DISALLOW_INDEXING` (`1` solo en la demo; `0` en producción para que Google indexe).
 - Secretos en runtime (`.env` del servidor / secrets de GitHub), nunca en la imagen ni en git: `DATABASE_URL`, `PAYLOAD_SECRET`, `POSTGRES_PASSWORD` y los del adaptador de correo.
 - Persistencia fuera del contenedor: volumen de PostgreSQL y carpeta `media/` (montada en `/app/media`, dueño uid 1001). Ambos entran en los backups programados.
-- La app corre como usuario no root, escucha en `127.0.0.1` y el proxy (Nginx o el de Coolify) termina HTTPS, con rate limiting en `/api/orders` y `/api/search`.
-- La imagen se construye en **GitHub Actions** (lint, typecheck, Vitest, build → `ghcr.io`) y el VPS solo hace `pull` + `up -d`: el build de Next necesita varios GB de RAM y no debe correr en el VPS de producción.
+- La app corre como usuario no root, solo es accesible a través del proxy (Traefik de Coolify en producción, Nginx en la demo), que termina HTTPS, con rate limiting en `/api/orders` y `/api/search`.
+- Chequeo de salud: `GET /api/health` (consulta la base; 200 u 503). Lo usan el `HEALTHCHECK` del Dockerfile y Coolify.
+- **CI/CD** (`.github/workflows/deploy.yml`): en cada PR, lint + typecheck + Vitest (con PostgreSQL de servicio). En push a `main`: lo anterior → imagen `ghcr.io/chrishvk1322/calypso_noir:latest` y `:<sha>` → llamada al Deploy Webhook de Coolify, que descarga la imagen y la despliega. El VPS nunca compila (el build de Next necesita varios GB de RAM). Configuración del repo: variable `NEXT_PUBLIC_SERVER_URL` y secretos `COOLIFY_WEBHOOK` / `COOLIFY_TOKEN`.
+- Volver a una versión anterior: en Coolify, cambiar la etiqueta de la imagen al `<sha>` deseado y redesplegar (si esa versión es anterior a una migración, restaurar también el backup de la base).
 - Orden de un despliegue: backup de la base → pull de la imagen → arranque (aplica migraciones pendientes) → verificación de salud. Si una migración falla, la app no arranca y se restaura el backup / se vuelve a la imagen anterior.
 
 <!-- BEGIN:nextjs-agent-rules -->
