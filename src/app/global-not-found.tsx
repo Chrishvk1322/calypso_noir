@@ -1,6 +1,7 @@
 import './(frontend)/styles.css'
 
 import type { Metadata } from 'next'
+import { connection } from 'next/server'
 
 import { Header } from '@/components/shop/Header'
 import { NotFoundContent } from '@/components/shop/NotFoundContent'
@@ -15,7 +16,11 @@ export const metadata: Metadata = {
 
 // 404 para URLs que no coinciden con ninguna ruta. Como la app tiene dos layouts raíz
 // (tienda y admin), Next no usa ninguno aquí: este archivo arma su propio <html>.
-export default function GlobalNotFound() {
+export default async function GlobalNotFound() {
+  // Se renderiza en cada visita: el menú (tipos de accesorio) viene de la base, que no existe
+  // durante `next build`, y así nunca queda congelado con los datos del momento de compilar.
+  await connection()
+
   return (
     <html lang="es" className={fontVariablesNoPreload}>
       <body className="flex min-h-svh flex-col">

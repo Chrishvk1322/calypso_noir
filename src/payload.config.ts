@@ -53,7 +53,8 @@ export default buildConfig({
     },
     // En producción las migraciones pendientes se aplican al arrancar (la imagen standalone no
     // trae el CLI de Payload). En desarrollo se sigue usando push. Ver CLAUDE.md → Despliegue.
-    prodMigrations: migrations,
+    // Durante `next build` no hay base de datos: ahí no se migra (se hará al arrancar el servidor).
+    prodMigrations: process.env.NEXT_PHASE === 'phase-production-build' ? undefined : migrations,
   }),
   sharp,
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000',
