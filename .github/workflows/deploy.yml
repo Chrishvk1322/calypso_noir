@@ -109,6 +109,7 @@ jobs:
             echo "::error::Faltan los secretos COOLIFY_WEBHOOK y/o COOLIFY_TOKEN"
             exit 1
           fi
-          curl --fail-with-body --silent --show-error --max-time 60 \
+          # Coolify 4.3+ solo acepta POST en /api/v1/deploy.
+          curl --fail-with-body --silent --show-error --max-time 60 -X POST \
             -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_WEBHOOK"
           echo "Desplegando ${{ needs.image.outputs.tag }}"
