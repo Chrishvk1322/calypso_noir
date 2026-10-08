@@ -62,9 +62,9 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
   - Carrusel interactivo administrable desde Payload CMS (hasta 3 imágenes con texto personalizable).
   - Cada slide incluye un botón *"Ver colección"* que redirige al apartado de la colección correspondiente.
 - **Feed de Colecciones:**
-  - Listado de colecciones ordenadas desde la más reciente a la más antigua.
+  - Listado de colecciones en el **orden definido en el admin** (arrastrando las filas en Colecciones; las nuevas quedan primero).
   - Paginación de colecciones (10 colecciones por página).
-  - Cada colección listada debe mostrar una vista previa con **4 de sus productos más recientes**.
+  - Cada colección listada debe mostrar una vista previa con **sus 4 primeros productos** según el orden del admin.
 
 ### 3. Vista de Detalle del Producto (`/productos/[slug]`)
 - Galería de imágenes del producto.
@@ -73,8 +73,13 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - Botón *"Agregar al Carrito"*.
 - Metadatos dinámicos OpenGraph (para previsualizaciones al compartir enlace).
 
-### 3b. Filtros de listados
-- En `/colecciones/[slug]`, `/accesorios/[slug]` y la sección Productos de `/buscar`: check **"Oferta"** y select **"Ordenar por"** (Más recientes, Precio: Mayor a menor, Precio: Menor a mayor, Nombre: A - Z, Nombre: Z - A). Viven en la URL (`?oferta=1&orden=precio-asc`) y la paginación los conserva.
+### 3b. Filtros y orden de listados
+- En `/colecciones/[slug]`, `/accesorios/[slug]` y la sección Productos de `/buscar`: check **"Oferta"** y select **"Ordenar por"** para el cliente (Más recientes, Precio: Mayor a menor, Precio: Menor a mayor, Nombre: A - Z, Nombre: Z - A). Viven en la URL (`?oferta=1&orden=precio-asc`) y la paginación los conserva.
+- **Orden manual desde el admin** (`orderable` de Payload, arrastrar y soltar; hooks en `src/hooks/order.ts`):
+  - Colecciones: lista de Colecciones → orden **solo** de la Home y el catálogo.
+  - Productos: al editar una colección, tabla "Productos" → opción **"Destacados"** del selector, que solo existe en `/colecciones/[slug]` y es su orden por defecto (sin `?orden=`). También ordena la vista previa de la Home y los relacionados.
+  - Accesorios y búsqueda (mezclan colecciones) empiezan por "Más recientes".
+  - Lo nuevo (colección o producto, o un producto que cambia de colección) queda **primero** hasta que se mueva.
 
 ### 4. Carrito de Compras & Flujo WhatsApp
 - Carrito lateral/modal administrado con Zustand.
@@ -102,6 +107,8 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - `description`: Text
 - `coverImage`: Media (Upload)
 - `active`: Boolean (Default: true)
+- `_order`: Text (oculto, orden manual; lo gestiona Payload con `orderable: true`)
+- `products`: Join -> `Products` (solo admin, `orderable`: tabla para ordenar los productos de la colección)
 
 ### 2. `Products` (Colección de Payload)
 - `name`: Text (Required)
@@ -111,6 +118,7 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - `onSale`: Boolean (Default: false) y `salePrice`: Number (precio final de oferta; obligatorio y menor que `price` si `onSale`). En la tienda: precio anterior tachado, precio de oferta destacado y etiqueta "En oferta" en la imagen ("Agotado" tiene prioridad). El checkout cobra el precio de oferta.
 - `effectivePrice`: Number (oculto, lo calcula un hook: precio que se cobra; sirve para ordenar por precio)
 - `sortName`: Text (oculto, lo calcula un hook: nombre en minúsculas y sin tildes; sirve para ordenar por nombre igual en cualquier servidor)
+- `_products_products_order`: Text (oculto, orden dentro de su colección; lo crea el join `orderable` de Collections)
 - `description`: RichText / Text
 - `images`: Media Upload (hasMany)
 - `collection`: Relation -> `Collections` (Required)
@@ -165,6 +173,7 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 ### 2. Migración inicial (baseline)
 - `src/migrations/20261006_061451_initial.ts` contiene el esquema completo (Fases 0–8 + optimización de imágenes). Un servidor vacío la aplica y queda con todas las tablas.
 - En bases que ya tienen ese esquema se marca como aplicada sin ejecutarla (insertar su fila en `payload_migrations` con `batch = 1`), sin borrar ni recrear nada. Hecho en la base dev local; la demo de Azure no está marcada.
+- `20261008_050836_manual_order`: columnas del orden manual y relleno con el orden anterior (más reciente primero, solo filas sin clave). Marcada como aplicada en la base dev.
 - Nuevas migraciones: `pnpm payload migrate:create <nombre>` (actualiza `src/migrations/index.ts`); después se marca como aplicada en la base dev, porque ahí el esquema ya lo aplicó el push.
 
 ### 3. Requisitos para el Dockerfile / despliegue limpio

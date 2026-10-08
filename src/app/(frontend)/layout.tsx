@@ -4,6 +4,7 @@ import React, { ViewTransition } from 'react'
 import { Footer } from '@/components/shop/Footer'
 import { Header } from '@/components/shop/Header'
 import { HideDevIndicator } from '@/components/shop/HideDevIndicator'
+import { FILTER_TRANSITION } from '@/lib/filters'
 import { fontVariables } from '@/lib/fonts'
 import { SITE_URL } from '@/lib/site-url'
 
@@ -34,8 +35,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <Header />
         <main id="contenido" tabIndex={-1} className="flex-1 outline-none">
-          {/* Transición suave del contenido al navegar (ver ::view-transition-* en styles.css). */}
-          <ViewTransition default="page-swap">{children}</ViewTransition>
+          {/* Transición suave del contenido al navegar (ver ::view-transition-* en styles.css).
+              Los cambios de filtro no la usan: solo anima la grilla (ProductListing). */}
+          <ViewTransition default={{ [FILTER_TRANSITION]: 'none', default: 'page-swap' }}>{children}</ViewTransition>
         </main>
         <Footer />
         {process.env.NODE_ENV === 'development' && <HideDevIndicator />}

@@ -4,14 +4,23 @@ import { ChevronDownIcon, Loader2Icon } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useId, useOptimistic, useTransition } from 'react'
 
-import { filtersToParams, type ProductFilters as Filters, SORT_OPTIONS, type SortKey } from '@/lib/filters'
+import { type DefaultSort, FILTER_TRANSITION, filtersToParams, type ProductFilters as Filters, type SortKey, sortOptions } from '@/lib/filters'
 import { cn } from '@/lib/utils'
 
 /**
  * Filtros "Oferta" y "Ordenar por" de un listado de productos. Cambian la URL (sin mover el
  * scroll), vuelven a la página 1 y conservan los demás parámetros (p. ej. `q` en /buscar).
+ * `defaultSort` es el orden del listado sin `?orden=` ("Destacados" en una colección).
  */
-export function ProductFilters({ filters, className }: { filters: Filters; className?: string }) {
+export function ProductFilters({
+  filters,
+  defaultSort = 'recientes',
+  className,
+}: {
+  filters: Filters
+  defaultSort?: DefaultSort
+  className?: string
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -24,11 +33,11 @@ export function ProductFilters({ filters, className }: { filters: Filters; class
   const apply = (next: Filters) => {
     const params = new URLSearchParams(searchParams)
     for (const key of ['oferta', 'orden', 'page']) params.delete(key)
-    for (const [key, value] of Object.entries(filtersToParams(next))) params.set(key, value)
+    for (const [key, value] of Object.entries(filtersToParams(next, defaultSort))) params.set(key, value)
     const query = params.toString()
     startTransition(() => {
       setCurrent(next)
-      router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false })
+      router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false, transitionTypes: [FILTER_TRANSITION] })
     })
   }
 
@@ -68,7 +77,7 @@ export function ProductFilters({ filters, className }: { filters: Filters; class
             onChange={(event) => apply({ ...current, sort: event.target.value as SortKey })}
             className="h-11 cursor-pointer appearance-none rounded-md border border-input bg-background pr-9 pl-3 text-sm transition-colors hover:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
-            {SORT_OPTIONS.map((option) => (
+            {sortOptions(defaultSort).map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>

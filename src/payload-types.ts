@@ -79,7 +79,11 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    collections: {
+      products: 'products';
+    };
+  };
   collectionsSelect: {
     orders: OrdersSelect<false> | OrdersSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
@@ -177,6 +181,7 @@ export interface Order {
  */
 export interface Product {
   id: number;
+  _products_products_order?: string | null;
   name: string;
   /**
    * Se genera automáticamente si se deja vacío.
@@ -265,11 +270,14 @@ export interface Media {
   };
 }
 /**
+ * Arrastra las filas para elegir el orden en la Home y el catálogo. Las nuevas aparecen primero. Si la lista está ordenada por otra columna, pulsa el ícono de la esquina izquierda de los títulos para volver al orden manual.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "collections".
  */
 export interface Collection {
   id: number;
+  _order?: string | null;
   title: string;
   /**
    * Se genera automáticamente si se deja vacío.
@@ -278,6 +286,14 @@ export interface Collection {
   description?: string | null;
   coverImage?: (number | null) | Media;
   active?: boolean | null;
+  /**
+   * Arrastra las filas para elegir el orden en la tienda. Los productos nuevos aparecen primero.
+   */
+  products?: {
+    docs?: (number | Product)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -467,6 +483,7 @@ export interface OrdersSelect<T extends boolean = true> {
  * via the `definition` "products_select".
  */
 export interface ProductsSelect<T extends boolean = true> {
+  _products_products_order?: T;
   name?: T;
   slug?: T;
   price?: T;
@@ -488,11 +505,13 @@ export interface ProductsSelect<T extends boolean = true> {
  * via the `definition` "collections_select".
  */
 export interface CollectionsSelect<T extends boolean = true> {
+  _order?: T;
   title?: T;
   slug?: T;
   description?: T;
   coverImage?: T;
   active?: T;
+  products?: T;
   updatedAt?: T;
   createdAt?: T;
 }

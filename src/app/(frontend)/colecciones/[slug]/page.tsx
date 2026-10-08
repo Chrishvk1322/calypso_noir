@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps<'/colecciones/[slug
 export default async function CollectionPage({ params, searchParams }: PageProps<'/colecciones/[slug]'>) {
   const [{ slug }, query] = await Promise.all([params, searchParams])
   const page = parsePage(query.page)
-  const filters = parseFilters(query)
+  const filters = parseFilters(query, 'destacados')
 
   const collection = await getCollectionBySlug(slug)
   if (!collection) notFound()
@@ -67,14 +67,15 @@ export default async function CollectionPage({ params, searchParams }: PageProps
         <ProductListing
           products={products}
           filters={filters}
-          clearSaleHref={filteredHref(`/colecciones/${collection.slug}`, { ...filters, onSale: false })}
+          defaultSort="destacados"
+          clearSaleHref={filteredHref(`/colecciones/${collection.slug}`, { ...filters, onSale: false }, {}, 'destacados')}
         />
 
         <Pagination
           page={pagination.page}
           totalPages={pagination.totalPages}
           basePath={`/colecciones/${collection.slug}`}
-          params={filtersToParams(filters)}
+          params={filtersToParams(filters, 'destacados')}
         />
       </div>
     </>

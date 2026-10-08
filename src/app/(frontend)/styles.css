@@ -135,9 +135,40 @@
   }
 }
 
+/* Cambio de filtro u orden: solo la grilla de productos, con un fundido breve. */
+::view-transition-old(.grid-swap) {
+  animation: page-out 120ms ease-in both;
+}
+
+::view-transition-new(.grid-swap) {
+  animation: grid-in 220ms ease-out both;
+}
+
+@keyframes grid-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* El header no se anima: queda fijo y por encima del contenido durante cualquier transición. */
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 100;
+}
+
+::view-transition-old(site-header) {
+  display: none;
+}
+
+::view-transition-new(site-header) {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(.page-swap),
-  ::view-transition-new(.page-swap) {
+  ::view-transition-new(.page-swap),
+  ::view-transition-old(.grid-swap),
+  ::view-transition-new(.grid-swap) {
     animation: none;
   }
 }

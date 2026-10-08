@@ -19,8 +19,14 @@ export const PREVIEW_PRODUCTS = 4
 export const CATALOG_PER_PAGE = 12
 export const PRODUCTS_PER_PAGE = 12
 
-// Orden estable: más reciente primero y, ante empate de fecha, el id mayor.
+// Orden definido en el admin (src/hooks/order.ts). Desempate por fecha e id: estable al paginar.
+const COLLECTION_ORDER = ['_order', '-createdAt', '-id']
+const PRODUCT_ORDER = toPayloadSort('destacados')
+// El orden manual de colecciones solo aplica a la Home y el catálogo; la búsqueda de colecciones
+// va de la más reciente a la más antigua.
 const NEWEST_FIRST = ['-createdAt', '-id']
+/** Una colección empieza por "Destacados" (orden del admin); el visitante puede cambiarlo. */
+const COLLECTION_FILTERS: ProductFilters = { onSale: false, sort: 'destacados' }
 
 const productCardSelect = {
   name: true,
@@ -70,7 +76,7 @@ async function fetchProductPreviews(
   collectionId: number,
   limit = PREVIEW_PRODUCTS,
   page = 1,
-  filters: ProductFilters = DEFAULT_FILTERS,
+  filters: ProductFilters = COLLECTION_FILTERS,
 ): Promise<{ products: ProductCardData[]; pagination: Pagination }> {
   const payload = await getPayloadClient()
   const result = await payload.find({
@@ -91,7 +97,7 @@ export type FeedCollection = Pick<Collection, 'id' | 'title' | 'slug' | 'descrip
   productCount: number
 }
 
-/** Feed de la Home: colecciones de la más reciente a la más antigua, cada una con sus 4 productos más recientes. */
+/** Feed de la Home: colecciones en el orden del admin, cada una con sus 4 primeros productos. */
 async function fetchCollectionsFeed(
   page = 1,
 ): Promise<{ collections: FeedCollection[]; pagination: Pagination }> {
@@ -99,7 +105,7 @@ async function fetchCollectionsFeed(
   const result = await payload.find({
     collection: 'collections',
     overrideAccess: false,
-    sort: NEWEST_FIRST,
+    sort: COLLECTION_ORDER,
     limit: COLLECTIONS_PER_PAGE,
     page,
     depth: 0,
@@ -129,7 +135,7 @@ async function fetchCatalog(page = 1) {
   const result = await payload.find({
     collection: 'collections',
     overrideAccess: false,
-    sort: NEWEST_FIRST,
+    sort: COLLECTION_ORDER,
     limit: CATALOG_PER_PAGE,
     page,
     depth: 1,
@@ -170,7 +176,7 @@ async function fetchProductBySlug(slug: string): Promise<ProductDetail | null> {
   return product as ProductDetail
 }
 
-/** Otros productos de la misma colección (los más recientes), sin el actual. */
+/** Otros productos de la misma colección (en el orden del admin), sin el actual. */
 async function fetchRelatedProducts(
   collectionId: number,
   excludeProductId: number,
@@ -183,7 +189,7 @@ async function fetchRelatedProducts(
     where: {
       and: [{ collection: { equals: collectionId } }, { id: { not_equals: excludeProductId } }],
     },
-    sort: NEWEST_FIRST,
+    sort: PRODUCT_ORDER,
     limit,
     depth: 1,
     select: productCardSelect,
@@ -223,7 +229,7 @@ async function fetchAccessoryTypeBySlug(slug: string): Promise<AccessoryType | n
   return docs[0] ?? null
 }
 
-/** Productos activos de un tipo de accesorio (solo de colecciones activas), más recientes primero. */
+/** Productos activos de un tipo de accesorio (solo de colecciones activas); por defecto, más recientes primero. */
 async function fetchAccessoryProducts(
   accessoryTypeId: number,
   limit = PRODUCTS_PER_PAGE,

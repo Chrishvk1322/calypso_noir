@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload'
 import { authenticated, authenticatedOrActive } from '@/access'
 import { slugField } from '@/fields/slug'
 import { deleteOrphanImages } from '@/hooks/media'
+import { placeProductFirst } from '@/hooks/order'
 import { setSortFields } from '@/hooks/products'
 import { revalidateAfterChange, revalidateAfterDelete } from '@/hooks/revalidate'
 import { isValidSalePrice } from '@/lib/pricing'
@@ -24,7 +25,7 @@ export const Products: CollectionConfig = {
   },
   defaultSort: '-createdAt',
   hooks: {
-    beforeChange: [setSortFields],
+    beforeChange: [setSortFields, placeProductFirst],
     afterChange: [revalidateAfterChange(['products'])],
     afterDelete: [deleteOrphanImages, revalidateAfterDelete(['products'])],
   },

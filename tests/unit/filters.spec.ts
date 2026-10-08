@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_FILTERS, filteredHref, filtersToParams, parseFilters, toPayloadSort, toSortName } from '@/lib/filters'
+import { DEFAULT_FILTERS, filteredHref, filtersToParams, parseFilters, sortOptions, toPayloadSort, toSortName } from '@/lib/filters'
 
 describe('parseFilters', () => {
   it('lee oferta y orden de la URL', () => {
@@ -11,6 +11,33 @@ describe('parseFilters', () => {
   it('valores desconocidos o vacíos caen a los de por defecto', () => {
     expect(parseFilters({})).toEqual(DEFAULT_FILTERS)
     expect(parseFilters({ oferta: 'si', orden: 'barato' })).toEqual(DEFAULT_FILTERS)
+  })
+})
+
+describe('"Destacados" (orden del admin)', () => {
+  it('solo se ofrece donde es el orden por defecto (colecciones)', () => {
+    expect(sortOptions('destacados')[0]).toEqual({ value: 'destacados', label: 'Destacados' })
+    expect(sortOptions('destacados')).toHaveLength(6)
+    expect(sortOptions().map((o) => o.value)).not.toContain('destacados')
+  })
+
+  it('en una colección es el valor por defecto y no va en la URL', () => {
+    expect(parseFilters({}, 'destacados')).toEqual({ onSale: false, sort: 'destacados' })
+    expect(parseFilters({ orden: 'barato' }, 'destacados').sort).toBe('destacados')
+    expect(parseFilters({ orden: 'recientes' }, 'destacados').sort).toBe('recientes')
+    expect(filtersToParams({ onSale: false, sort: 'destacados' }, 'destacados')).toEqual({})
+    expect(filtersToParams({ onSale: false, sort: 'recientes' }, 'destacados')).toEqual({ orden: 'recientes' })
+    expect(filteredHref('/colecciones/luna', { onSale: true, sort: 'destacados' }, {}, 'destacados')).toBe(
+      '/colecciones/luna?oferta=1',
+    )
+  })
+
+  it('fuera de una colección no es válido', () => {
+    expect(parseFilters({ orden: 'destacados' })).toEqual(DEFAULT_FILTERS)
+  })
+
+  it('ordena por la clave de orden de la colección', () => {
+    expect(toPayloadSort('destacados')).toEqual(['_products_products_order', '-createdAt', '-id'])
   })
 })
 

@@ -10,7 +10,11 @@ export async function Header() {
   const accessoryTypes = await getAccessoryTypes()
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur supports-backdrop-filter:bg-background/75">
+    // Nombre propio en las View Transitions: queda fijo y por encima del contenido que se anima.
+    <header
+      style={{ viewTransitionName: 'site-header' }}
+      className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur supports-backdrop-filter:bg-background/75"
+    >
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:px-6">
         <MobileNav accessoryTypes={accessoryTypes} />
 
