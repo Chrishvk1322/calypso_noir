@@ -1,0 +1,10 @@
+// Listas del admin: sin casillas de selección. Las acciones masivas ("Editar" y "Eliminar" al
+// marcar filas) están desactivadas (ver withoutBulkActions en src/lib/admin-config.ts), así que
+// las casillas no harían nada. Dentro de un drawer (elegir imágenes existentes) se conservan.
+.collection-list:not(.drawer *) {
+  #heading-_select,
+  .cell-_select,
+  .list-selection {
+    display: none;
+  }
+}

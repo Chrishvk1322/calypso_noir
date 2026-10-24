@@ -80,6 +80,8 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
   - Productos: al editar una colección, tabla "Productos" → opción **"Destacados"** del selector, que solo existe en `/colecciones/[slug]` y es su orden por defecto (sin `?orden=`). También ordena la vista previa de la Home y los relacionados.
   - Accesorios y búsqueda (mezclan colecciones) empiezan por "Más recientes".
   - Lo nuevo (colección o producto, o un producto que cambia de colección) queda **primero** hasta que se mueva.
+  - Para arrastrar, la lista del admin debe estar ordenada por su orden manual (Payload avisa "sort them by the Order column" y recuerda el último orden elegido en las preferencias del usuario): ícono de la esquina izquierda de los títulos.
+- **Cambio de filtro suave:** `router.replace` con `transitionTypes: [FILTER_TRANSITION]` (`src/lib/filters.ts`). El `ViewTransition` del layout lo ignora (sin fundido de página) y solo la grilla de `ProductListing` hace `.grid-swap`. El header tiene `viewTransitionName: 'site-header'` y no se anima: queda fijo encima del contenido en toda transición.
 
 ### 4. Carrito de Compras & Flujo WhatsApp
 - Carrito lateral/modal administrado con Zustand.
@@ -88,7 +90,8 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
   1. Realiza una petición `POST` a la API `/api/orders`.
   2. La API valida stock, registra el pedido en PostgreSQL y genera un código único de compra (ej: `#PED-8492`).
   3. Construye la URL de WhatsApp aplicando la plantilla de mensaje configurada en Payload CMS.
-  4. Redirige al cliente a WhatsApp con la información y el código para coordinar el pago.
+  4. Abre WhatsApp **en otra pestaña** con la información y el código para coordinar el pago; la tienda sigue abierta con el aviso del pedido y el botón "Abrir WhatsApp" (también en pestaña nueva). La pestaña se abre vacía dentro del clic y se llena al registrarse el pedido (si se abriera después del `fetch`, el navegador la bloquearía); si el pedido falla se cierra, y si las ventanas emergentes están bloqueadas se redirige en la misma pestaña.
+  - El aviso "Registramos tu pedido…" del carrito (guardado en `localStorage`, máx. 1 día) se quita cuando el admin **confirma o cancela** el pedido: el carrito consulta `GET /api/order-status?code=…&total=…` (`isOrderPending`, solo responde si ese código con ese total sigue pendiente) al abrirse y al volver a la pestaña. Si la consulta falla, el aviso se mantiene.
   5. El pedido también debe ser gestionado en el CMS backend para tener control total y validar el pago y actualizar stock mediante una lógica que implique que se vendió el producto.
 
 ### 5. Footer (Pie de Página)
@@ -159,6 +162,11 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - `aboutUsText`: RichText / Text
 - `aboutUsPhotos`: Media (hasMany)
 
+### 7. Ajustes comunes del admin (`withAdminDefaults`, `src/lib/admin-config.ts`)
+- Sin pestañas "Editar"/"API" en los registros; botón "Cancelar" al crear.
+- **Listas sin casillas ni acciones masivas:** `disableBulkEdit` y `disableBulkDelete` en todas las colecciones (también bloquea esas operaciones en la API REST; la Local API no cambia) y las casillas se ocultan con `src/app/(payload)/custom.scss` (se conservan en los drawers, p. ej. "Elegir de los existentes"). Se edita entrando al registro.
+- **Eliminar:** botón "Eliminar" junto a "Guardar" dentro del registro (`src/components/admin/DeleteDocument.tsx`), siempre con modal de confirmación que nombra el registro. No aparece al crear, en drawers, en la cuenta propia ni en Pedidos (que usa "Cancelar pedido").
+
 ---
 
 ## Despliegue y Migraciones de Base de Datos
@@ -184,7 +192,10 @@ Catálogo comercial y tienda virtual altamente optimizada para **Calypso Noir**,
 - Persistencia fuera del contenedor: volumen de PostgreSQL y carpeta `media/` (montada en `/app/media`, dueño uid 1001). Ambos entran en los backups programados.
 - La app corre como usuario no root, solo es accesible a través del proxy (Traefik de Coolify en producción, Nginx en la demo), que termina HTTPS, con rate limiting en `/api/orders` y `/api/search`.
 - Rate limiting y redirección `www` → dominio con 301: archivo de Traefik en el VPS `/data/coolify/proxy/dynamic/calypso-extra.yaml` (fuera del repo; Traefik lo recarga solo). `POST /api/orders`: 10/min, ráfaga 5; `/api/search`: 60/min, ráfaga 20; por IP real (`CF-Connecting-IP`, el dominio va detrás de Cloudflare). Usa los servicios `https-0/1-<uuid de la app>@docker` que genera Coolify: si se recrea la app en Coolify, actualizar ese uuid.
-- Backups (solo en el VPS por ahora): base de datos con los Scheduled Backups de Coolify (diario 03:00 Perú, 14 copias) y `media/` con `/usr/local/bin/calypso-media-backup.sh` vía `/etc/cron.d/calypso-media-backup` (diario 03:15 Perú → `/root/backups/media`, 14 días).
+- Backups en el VPS **y** en Cloudflare R2 (bucket privado `calypso-backups`, regla de ciclo de vida: borra a los 30 días; token de API solo de ese bucket):
+  - Base de datos: Scheduled Backups de Coolify (diario 03:00 Perú, 14 copias locales) con "Save to S3" al storage `r2` de Coolify → `data/coolify/backups/databases/...` en el bucket.
+  - `media/`: `/usr/local/bin/calypso-media-backup.sh` vía `/etc/cron.d/calypso-media-backup` (diario 03:15 Perú → `/root/backups/media`, 14 días) y lo sube con rclone a `calypso-backups/media/`. Endpoint y claves en `/etc/calypso-r2.env` (root, 600). rclone 1.60 necesita `no_head` (si no, R2 responde 501 a la verificación con `versionId` aunque la subida funcione) y sin ACL. Log: `/var/log/calypso-media-backup.log`.
+  - Restaurar: descargar de R2 (`rclone copy r2:calypso-backups/<ruta> <dir>` con las variables del `.env`) y `pg_restore` / `tar -xzf` en el volumen. Probado: dump legible con `pg_restore -l` y tar íntegro.
 - Chequeo de salud: `GET /api/health` (consulta la base; 200 u 503). Lo usan el `HEALTHCHECK` del Dockerfile y Coolify.
 - **CI/CD** (`.github/workflows/deploy.yml`): en cada PR, lint + typecheck + Vitest (con PostgreSQL de servicio). En push a `main`: lo anterior → imagen `ghcr.io/chrishvk1322/calypso_noir:latest` y `:<sha>` → llamada al Deploy Webhook de Coolify, que descarga la imagen y la despliega. El VPS nunca compila (el build de Next necesita varios GB de RAM). Configuración del repo: variable `NEXT_PUBLIC_SERVER_URL` y secretos `COOLIFY_WEBHOOK` / `COOLIFY_TOKEN`.
 - Volver a una versión anterior: en Coolify, cambiar la etiqueta de la imagen al `<sha>` deseado y redesplegar (si esa versión es anterior a una migración, restaurar también el backup de la base).

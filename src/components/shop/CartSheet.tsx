@@ -2,7 +2,7 @@
 
 import { Loader2Icon, XIcon } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -14,11 +14,49 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { formatPrice } from '@/lib/format'
-import { selectItemCount, selectSubtotal, useCart, useHydrated } from '@/stores/cart'
+import { type LastOrder, selectItemCount, selectSubtotal, useCart, useHydrated } from '@/stores/cart'
 
 import { CartLine } from './CartLine'
 import { CHECKOUT_FORM_ID, CheckoutForm } from './CheckoutForm'
 import { WhatsAppIcon } from './icons'
+
+/**
+ * Quita el aviso "Registramos tu pedido…" cuando el admin ya confirmó o canceló ese pedido.
+ * Lo consulta al abrir el carrito y al volver a la pestaña (p. ej. desde WhatsApp). Si la
+ * consulta falla, el aviso se queda: es preferible a ocultar un pedido que sigue pendiente.
+ */
+function useLastOrderStatus(order: LastOrder | null) {
+  const code = order?.orderCode
+  const total = order?.totalAmount
+
+  useEffect(() => {
+    if (!code || total === undefined) return
+    const controller = new AbortController()
+
+    const check = async () => {
+      if (document.visibilityState !== 'visible') return
+      try {
+        const query = new URLSearchParams({ code, total: String(total) })
+        const response = await fetch(`/api/order-status?${query}`, { cache: 'no-store', signal: controller.signal })
+        if (!response.ok) return
+        const { pending } = (await response.json()) as { pending: boolean }
+        // Solo se borra si sigue siendo el mismo pedido (pudo registrarse otro mientras tanto).
+        if (!pending && useCart.getState().lastOrder?.orderCode === code) useCart.getState().setLastOrder(null)
+      } catch {
+        // Sin conexión o petición cancelada: se reintenta al volver a la pestaña.
+      }
+    }
+
+    void check()
+    document.addEventListener('visibilitychange', check)
+    window.addEventListener('focus', check)
+    return () => {
+      controller.abort()
+      document.removeEventListener('visibilitychange', check)
+      window.removeEventListener('focus', check)
+    }
+  }, [code, total])
+}
 
 export function CartSheet() {
   const hydrated = useHydrated()
@@ -33,6 +71,7 @@ export function CartSheet() {
   // El store descarta el último pedido después de un día (ver LAST_ORDER_TTL_MS).
   const recentOrder = hydrated ? lastOrder : null
   const close = () => setOpen(false)
+  useLastOrderStatus(recentOrder)
 
   return (
     <SheetContent
@@ -74,7 +113,7 @@ export function CartSheet() {
               </Button>
             </div>
             <Button asChild variant="whatsapp" size="lg" className="mt-3 h-10 w-full gap-2">
-              <a href={recentOrder.whatsappUrl}>
+              <a href={recentOrder.whatsappUrl} target="_blank" rel="noopener noreferrer">
                 <WhatsAppIcon className="size-4" />
                 Abrir WhatsApp
               </a>

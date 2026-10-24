@@ -18,6 +18,7 @@ const expectNoTabs = (admin: TabsAdmin | undefined) => {
 }
 
 const CANCEL_CREATE = '/components/admin/CancelCreate#CancelCreate'
+const DELETE_DOCUMENT = '/components/admin/DeleteDocument#DeleteDocument'
 
 describe('Ajustes del admin: sin pestañas "Editar"/"API" y con "Cancelar" al crear', () => {
   beforeAll(async () => {
@@ -43,5 +44,34 @@ describe('Ajustes del admin: sin pestañas "Editar"/"API" y con "Cancelar" al cr
       '/components/admin/OrderActions#OrderActions',
       CANCEL_CREATE,
     ])
+  })
+
+  describe('sin "Editar"/"Eliminar" en las listas', () => {
+    const editable = () => payload.config.collections.filter(({ slug }) => !slug.startsWith('payload-'))
+
+    it('desactiva las acciones masivas en todas las colecciones', () => {
+      for (const collection of editable()) {
+        expect(collection.disableBulkEdit, collection.slug).toBe(true)
+        expect(collection.disableBulkDelete, collection.slug).toBe(true)
+      }
+    })
+
+    it('añade "Eliminar" con confirmación dentro del registro (Pedidos usa "Cancelar pedido")', () => {
+      for (const collection of editable()) {
+        const controls = collection.admin.components?.edit?.beforeDocumentControls ?? []
+        expect(controls.includes(DELETE_DOCUMENT), collection.slug).toBe(collection.slug !== 'orders')
+      }
+    })
+
+    it('la API con control de acceso rechaza editar o borrar en masa; la Local API no cambia', async () => {
+      const where = { title: { equals: 'No existe QA' } }
+      await expect(payload.delete({ collection: 'collections', where, overrideAccess: false })).rejects.toThrow(
+        /bulk delete/,
+      )
+      await expect(
+        payload.update({ collection: 'collections', where, data: { active: true }, overrideAccess: false }),
+      ).rejects.toThrow(/bulk edit/)
+      await expect(payload.delete({ collection: 'collections', where })).resolves.toMatchObject({ docs: [] })
+    })
   })
 })

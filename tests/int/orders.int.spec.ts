@@ -1,7 +1,7 @@
 import type { Payload } from 'payload'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
-import { createOrderFromCart } from '@/lib/checkout'
+import { createOrderFromCart, isOrderPending } from '@/lib/checkout'
 import { getPayloadClient } from '@/lib/payload'
 import type { Order, Product } from '@/payload-types'
 
@@ -281,6 +281,26 @@ describe('Pedidos (Fase 6)', () => {
       await expect(setStatus(docs[0].id, 'completed')).rejects.toThrow()
       expect(await stockOf(luna.id)).toBe(5)
       expect(await stockOf(sol.id)).toBe(1)
+    })
+
+    it('isOrderPending: el aviso del carrito desaparece al confirmar o cancelar el pedido', async () => {
+      const order = await createPending(1)
+      const code = order.orderCode!
+      const pending = () => isOrderPending(payload, code, order.totalAmount!)
+
+      expect(await pending()).toBe(true)
+      // Sin el total correcto o con un código inválido no responde nada útil.
+      expect(await isOrderPending(payload, code, order.totalAmount! + 1)).toBe(false)
+      expect(await isOrderPending(payload, 'PED-1', order.totalAmount!)).toBe(false)
+      expect(await isOrderPending(payload, code, Number.NaN)).toBe(false)
+
+      await setStatus(order.id, 'completed')
+      expect(await pending()).toBe(false)
+      await setStatus(order.id, 'pending')
+      expect(await pending()).toBe(true)
+
+      await payload.delete({ collection: 'orders', id: order.id })
+      expect(await pending()).toBe(false)
     })
 
     it('"Cancelar pedido": un admin puede eliminar un pedido pendiente', async () => {

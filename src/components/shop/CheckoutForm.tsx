@@ -58,6 +58,12 @@ export function CheckoutForm({ onSubmittingChange }: Props) {
       return
     }
 
+    // WhatsApp se abre en otra pestaña para no sacar al cliente de la tienda. La pestaña se abre
+    // ya, dentro del clic: si se abriera después de esperar al servidor, el navegador la
+    // bloquearía como ventana emergente. Se llena con la URL cuando el pedido queda registrado.
+    const whatsappTab = window.open('', '_blank')
+    let sentToWhatsApp = false
+
     onSubmittingChange(true)
     try {
       const response = await fetch('/api/orders', {
@@ -75,7 +81,14 @@ export function CheckoutForm({ onSubmittingChange }: Props) {
         setCustomer({ name: name.trim(), phone: phone.trim() })
         setLastOrder({ ...data, createdAt: Date.now() })
         clear()
-        window.location.assign(data.whatsappUrl)
+        sentToWhatsApp = true
+        if (whatsappTab) {
+          whatsappTab.opener = null
+          whatsappTab.location.replace(data.whatsappUrl)
+        } else {
+          // Ventanas emergentes bloqueadas: se abre en esta misma pestaña, como antes.
+          window.location.assign(data.whatsappUrl)
+        }
         return
       }
 
@@ -104,6 +117,7 @@ export function CheckoutForm({ onSubmittingChange }: Props) {
     } catch {
       setFormError('No pudimos conectar con la tienda. Revisa tu conexión e inténtalo nuevamente.')
     } finally {
+      if (!sentToWhatsApp) whatsappTab?.close()
       onSubmittingChange(false)
     }
   }

@@ -143,3 +143,23 @@ export async function createOrderFromCart(payload: Payload, input: unknown): Pro
     },
   }
 }
+
+/**
+ * ¿El pedido sigue pendiente? Lo consulta el carrito para dejar de mostrar "Registramos tu
+ * pedido…" cuando el admin lo confirma o lo cancela. Pide también el total, que el cliente ya
+ * conoce, para que no baste con probar códigos; solo responde sí o no.
+ */
+export async function isOrderPending(payload: Payload, orderCode: string, totalAmount: number): Promise<boolean> {
+  if (!/^#PED-\d{4,}$/.test(orderCode) || !Number.isFinite(totalAmount)) return false
+  const { totalDocs } = await payload.count({
+    collection: 'orders',
+    where: {
+      and: [
+        { orderCode: { equals: orderCode } },
+        { totalAmount: { equals: totalAmount } },
+        { status: { equals: 'pending' } },
+      ],
+    },
+  })
+  return totalDocs > 0
+}
